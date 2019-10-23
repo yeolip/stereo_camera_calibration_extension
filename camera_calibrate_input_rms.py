@@ -193,6 +193,9 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
     # fpd = pd.read_json(filename)
     print("modify_value_from_json")
     fp = open(filename + '_sample.json')
+    print(filename + '_sample.json')
+    # fp = open("D:\HET\calibration\python_stereo/" + filename + '_sample.json')
+    # print("#########D:\HET\calibration\python_stereo/" + filename + '_sample.json')
     fjs = json.load(fp)
     # print(fjs)
     # print(type(fjs))
@@ -203,7 +206,7 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
     fjs["master"]["lens_params"]['k1'] = d1[0][0]
     fjs["master"]["lens_params"]['k2'] = d1[0][1]
     # fjs["slave"]["lens_params"]['focal_len'] = M2[0][0], M2[1][1]
-    fjs["slave"]["lens_params"]['focal_len'] = -M2[0][0], -M2[1][1]
+    fjs["slave"]["lens_params"]['focal_len'] = M2[0][0], M2[1][1]
     fjs["slave"]["lens_params"]['principal_point'] = M2[0][2], M2[1][2]
     fjs["slave"]["lens_params"]['k1'] = d2[0][0]
     fjs["slave"]["lens_params"]['k2'] = d2[0][1]
@@ -221,6 +224,7 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
     fjs["reprojection_error"] = ret_rp
 
     wfp = open(path + '/' +filename + '_result_l_to_r' + '.json', 'w', encoding='utf-8')
+    print('$$$$$$$$' + path + '/' +filename+ '_result_l_to_r' + '.json')
     json.dump(fjs, wfp, indent=4)
 
     fp.close()
@@ -485,16 +489,67 @@ class StereoCalibration(object):
             print('argv[2]= ', argv[2], ', len= ', len(argv), '\n\n')
             # self.calc_rms_about_stereo(self.cal_path, self.cal_loadjson, self.cal_loadpoint)
             # self.read_points_with_stereo(self.cal_path, self.cal_loadjson, self.cal_loadpoint)
-            self.read_points_with_mono_stereo(self.cal_path, self.cal_loadjson, self.cal_loadpoint)
+            self.repeat_calibration(3, 3, self.cal_path, self.cal_loadjson, self.cal_loadpoint)
+            # self.read_points_with_mono_stereo(self.cal_path, self.cal_loadjson, self.cal_loadpoint)
 
         elif len(argv) >= 3:
             self.cal_loadjson = argv[2]
             print('argv[2]=', argv[2], ', len= ', len(argv), '\n\n')
             self.read_param_and_images_with_stereo(self.cal_path, self.cal_loadjson)
         else:
+            # self.repeat_calibration(1,1,self.cal_path)
             self.read_images_with_mono_stereo(self.cal_path)
         pass
 
+
+    def repeat_calibration(self, action, idx, cal_path, cal_loadjson, cal_loadpoint):
+        CURRENT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+
+        try:
+            os.chdir(cal_path)
+            print("change path", cal_path)
+            files_to_replace = []
+            for dirpath, dirnames, filenames in os.walk("."):
+                for filename in [f for f in filenames if f.endswith(".csv")]:
+                    # files_to_replace.append(os.path.join(dirpath))
+                    files_to_replace.append(os.path.abspath(dirpath))
+                    print("ok")
+                    break
+                # for filename in [f for f in filenames if f.endswith(".json")]:
+                # print(os.path.join(dirpath))
+            os.chdir(CURRENT_DIR)
+        except OSError:
+            print("Can't change the Current Working Directory")
+
+        print(files_to_replace)
+        for tpath in files_to_replace:
+            self.objpoints = []  # 3d point in real world space
+            self.imgpoints_l = []  # 2d points in image plane.
+            self.imgpoints_r = []  # 2d points in image plane.
+            print('tpath', tpath)
+            self.cal_path = tpath
+            self.cal_loadpoint = tpath
+            self.cal_loadjson = cal_loadjson
+            self.read_points_with_mono_stereo(tpath, cal_loadjson, tpath)
+
+        # try:
+        #     os.chdir(cal_path)
+        #     print("change path", cal_path)
+        #     files_to_replace = []
+        #     for dirpath, dirnames, filenames in os.walk("."):
+        #         if(os.path.exists(dirpath+'/LEFT') and os.path.exists(dirpath+'/RIGHT')):
+        #             files_to_replace.append(os.path.join(dirpath))
+        #             print("ok")
+        #         else:
+        #             print('ng')
+        #         # for filename in [f for f in filenames if f.endswith(".json")]:
+        #         print(os.path.join(dirpath))
+        # except OSError:
+        #     print("Can't change the Current Working Directory")
+        #
+        # print(files_to_replace)
+        # self.read_images_with_mono_stereo(self.cal_path)
+        return
     def nothing(self,x):
         pass
 
@@ -1017,7 +1072,7 @@ class StereoCalibration(object):
         # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
         self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
         # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
-        self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
+        # self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
         self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
         # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
         # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
@@ -1620,7 +1675,7 @@ class StereoCalibration(object):
         print("=" * 50)
 
         #plus focal length, Extrinsic_Left to Right
-        modify_value_from_json(self.cal_path, "stereo_config", Ml, dl, Mr, dr, R, T, dims, ret_rp)
+        # modify_value_from_json(self.cal_path, "stereo_config", Ml, dl, Mr, dr, R, T, dims, ret_rp)
 
         #minus focal length, Extrinsic_Right to Left
         uR = np.zeros((3), np.float64)
@@ -2251,8 +2306,10 @@ class StereoCalibration(object):
         total_points = 0
         p_reproj_left = []
         p_reproj_right = []
+        flog = open(self.cal_path + '/log.txt', 'a')
         print("=" * 50)
         print("RMSE_Stereo verify (each of image)")
+        flog.write("RMSE_Stereo verify (each of image)\n")
 
         # print(type(obj_points[0]),type(imgpoints_l[0]),type(imgpoints_r[0]))
         # print((obj_points[0]), (imgpoints_l[0]), (imgpoints_r[0]))
@@ -2301,6 +2358,7 @@ class StereoCalibration(object):
             temp_points = 2 * len(obj_points[i])
             temp_mean_error = np.sqrt(temp_error / temp_points)
             print(str(i) + 'st %.8f'%temp_mean_error)
+            flog.write(str(i) + 'st %.8f\n'%temp_mean_error)
 
             rp_l = rp_l.reshape(-1,2)
             rp_r = rp_r.reshape(-1,2)
@@ -2311,7 +2369,6 @@ class StereoCalibration(object):
 
         print("=" * 50)
         print('RMSE_Stereo verify ', mean_error)
-        flog = open(self.cal_path + '/log.txt', 'a')
         flog.write("RMSE_Stereo verify, %.9f\n" % mean_error)
         flog.close()
         print("=" * 50)
