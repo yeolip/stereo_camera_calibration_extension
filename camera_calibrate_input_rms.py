@@ -14,10 +14,10 @@
 #./data/rmsecal_input/ ./data/rmsecal_input/stereo_config_result_lge.json ./data/rmsecal_input/
 
 # to do
-# 1. load k3, k4, k5
-# 2. distingish minus focal on intrinsic
-# 3. distingish left to right and right to left on extrinsic
-# 4. disparity distance from pattern
+# 1. load, save k3, k4, k5 on left,right    - ok
+# 2. disparity distance from pattern        - ok
+# 3. distinguish minus focal on intrinsic
+# 4. distinguish left to right and right to left on extrinsic
 # 5. disparity distance from point
 # 6. auto parameter such as one, repeat using point, circle, square
 # 7. save Essensial and Fundamantal
@@ -110,13 +110,10 @@ enable_debug_pose_estimation_display = 0                   #false: 0, all_enable
 enable_debug_loop_moving_of_rot_and_trans = 1              #false: 0, left: 1, right:2
 
 
-enable_debug_dispatiry_estimation_display = 1              #true: 1, false: 0
+enable_debug_dispatiry_estimation_display = 1              #true: 1, false: 0, debug: 2
 select_png_or_raw       = 0                                #png: 0, raw: 1
 select_point_or_arrow_based_on_reproject_point = 1         #point: 0, arrow: 1
 
-# marker_point_x = 9
-# marker_point_y = 9
-# marker_length = -30
 marker_point_x = 10     #pattern's width point
 marker_point_y = 10     #pattern's height point
 marker_length = 30      #pattern's gap (unit is mm)
@@ -124,6 +121,15 @@ degreeToRadian = math.pi/180
 radianToDegree = 180/math.pi
 image_width = 1280
 image_height = 964
+
+default_camera_param_f = 1470
+default_camera_param_cx = image_width/2
+default_camera_param_cy = image_height/2
+default_camera_param_k1 = -0.1
+default_camera_param_k2 = -0.2
+default_camera_param_k3 = 0
+default_camera_param_k4 = 0
+default_camera_param_k5 = 0
 
 enable_intrinsic_plus_focal = 1                                 #plus: 1,   minus: 0
 enable_extrinsic_left_to_right = 1                              #left to right: 0,   right to left: 1
@@ -177,7 +183,7 @@ def load_value_from_json(filename):
     m_k3 = fjs["master"]["lens_params"]['k3']
     m_k4 = fjs["master"]["lens_params"]['k4']
     m_k5 = fjs["master"]["lens_params"]['k5']
-    print(m_fx, m_fy, m_cx, m_cy, m_k1, m_k2)
+    print(m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5)
     s_fx, s_fy = fjs["slave"]["lens_params"]['focal_len']
     s_cx, s_cy = fjs["slave"]["lens_params"]['principal_point']
     s_k1 = fjs["slave"]["lens_params"]['k1']
@@ -185,7 +191,7 @@ def load_value_from_json(filename):
     s_k3 = fjs["slave"]["lens_params"]['k3']
     s_k4 = fjs["slave"]["lens_params"]['k4']
     s_k5 = fjs["slave"]["lens_params"]['k5']
-    print(s_fx, s_fy, s_cx, s_cy, s_k1, s_k2)
+    print(s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5)
     print("*" * 50)
 
     calib_res = fjs["master"]["lens_params"]['calib_res']
@@ -201,16 +207,16 @@ def load_value_from_json(filename):
         print('2[',tranx, trany, tranz, '][',roty *degreeToRadian, rotx *degreeToRadian, rotz *degreeToRadian, ']')
     fp.close()
 
-    return m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, tranx, trany, tranz, \
+    return m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, \
            rotx *degreeToRadian, roty *degreeToRadian, rotz *degreeToRadian, calib_res
 
 
 ###save with result to stereo_config.json
 def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp):
     # fpd = pd.read_json(filename)
-    print("modify_value_from_json")
+    # print("modify_value_from_json")
     fp = open(filename + '_sample.json')
-    print(filename + '_sample.json')
+    # print(filename + '_sample.json')
     # fp = open("D:\HET\calibration\python_stereo/" + filename + '_sample.json')
     # print("#########D:\HET\calibration\python_stereo/" + filename + '_sample.json')
     fjs = json.load(fp)
@@ -247,7 +253,7 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
     fjs["reprojection_error"] = ret_rp
 
     wfp = open(path + '/' +filename + '_result_l_to_r' + '.json', 'w', encoding='utf-8')
-    print('$$$$$$$$' + path + '/' +filename+ '_result_l_to_r' + '.json')
+    print( path + '/' +filename+ '_result_l_to_r' + '.json')
     json.dump(fjs, wfp, indent=4)
 
     fp.close()
@@ -255,7 +261,7 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
 
 def modify_value_from_json_from_plus_to_minus_focal(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp):
     # fpd = pd.read_json(filename)
-    print("modify_value_from_json_from_plus_to_minus_focal")
+    # print("modify_value_from_json_from_plus_to_minus_focal")
     fp = open(filename + '_sample.json')
     fjs = json.load(fp)
     # print(fjs)
@@ -363,7 +369,7 @@ def save_coordinate_both_stereo_obj_img(path, objpoints, imgpoints_l, imgpoints_
     output = pd.DataFrame(table, columns=col)
     output.to_csv(path + '/' + "total_p_from_img.csv", index=False, header=False)
 
-def save_coordinate_both_stereo_obj_img_rectify(path, objpoints, imgpoints_l, imgpoints_r, count_ok_dual):
+def save_coordinate_using_rectify(path, objpoints, imgpoints_l, imgpoints_r, count_ok_dual):
     table = []
     refpointx = []
     refpointy = []
@@ -372,11 +378,6 @@ def save_coordinate_both_stereo_obj_img_rectify(path, objpoints, imgpoints_l, im
     lpointy = []
     rpointx = []
     rpointy = []
-
-    # print('3D ref count', len(objpoints))
-    # print('Left img count', len(imgpoints_l))
-    # print('Right img count', len(imgpoints_r))
-    # print(len(objpoints) / count_ok_dual)
 
     for i in objpoints:
         for refpoint in i:
@@ -389,19 +390,15 @@ def save_coordinate_both_stereo_obj_img_rectify(path, objpoints, imgpoints_l, im
             for leftpoint in j:
                 lpointx.append(leftpoint[0])
                 lpointy.append(leftpoint[1])
-        # print(i.shape)
-    # print("&" * 50)
     for i in imgpoints_r:
         for j in i:
             for rightpoint in j:
                 rpointx.append(rightpoint[0])
                 rpointy.append(rightpoint[1])
-
-    group_of_value = int(len(refpointx) / count_ok_dual)
-
     for i in range(0, len(refpointx), 1):
         table.append([refpointx[i], refpointy[i], refpointz[i], lpointx[i], lpointy[i], rpointx[i], rpointy[i]])
 
+    group_of_value = int(len(refpointx) / count_ok_dual)
     col = ['refpX', 'refpY', 'refpZ', 'M_imgX', 'M_imgY', 'S_imgX', 'S_imgY']
 
     for j in range(0, count_ok_dual, 1):
@@ -417,7 +414,55 @@ def save_coordinate_both_stereo_obj_img_rectify(path, objpoints, imgpoints_l, im
 
     table = np.round(table, 6)
     output = pd.DataFrame(table, columns=col)
-    output.to_csv(path + '/' + "rectifyTotal_p_from_img.csv", index=False, header=False)
+    output.to_csv(path + '/' + "totalRectify_p_from_img.csv", index=False, header=False)
+
+def save_coordinate_using_rectify_with_distance(path, objpoints, imgpoints_l, imgpoints_r, baseline, focal, count_ok_dual):
+    table = []
+    refpointx = []
+    refpointy = []
+    refpointz = []
+    lpointx = []
+    lpointy = []
+    rpointx = []
+    rpointy = []
+
+    for i in objpoints:
+        for refpoint in i:
+            refpointx.append(refpoint[0])
+            refpointy.append(refpoint[1])
+            refpointz.append(refpoint[2])
+    for i in imgpoints_l:
+        for j in i:
+            for leftpoint in j:
+                lpointx.append(leftpoint[0])
+                lpointy.append(leftpoint[1])
+    for i in imgpoints_r:
+        for j in i:
+            for rightpoint in j:
+                rpointx.append(rightpoint[0])
+                rpointy.append(rightpoint[1])
+    for i in range(0, len(refpointx), 1):
+        distance = (focal * baseline) / (lpointx[i] - rpointx[i])
+        table.append([refpointx[i], refpointy[i], refpointz[i], lpointx[i], lpointy[i], rpointx[i], rpointy[i], distance])
+
+    group_of_value = int(len(refpointx) / count_ok_dual)
+    col = ['refpX', 'refpY', 'refpZ', 'M_imgX', 'M_imgY', 'S_imgX', 'S_imgY', 'Distance']
+
+    for j in range(0, count_ok_dual, 1):
+        temp = []
+        for i in range(0, group_of_value, 1):
+            distance = (focal * baseline) / (lpointx[i + group_of_value * j] - rpointx[i + group_of_value * j])
+            temp.append([refpointx[i + group_of_value * j], refpointy[i + group_of_value * j],refpointz[i + group_of_value * j],
+                         lpointx[i + group_of_value * j], lpointy[i + group_of_value * j],
+                         rpointx[i + group_of_value * j], rpointy[i + group_of_value * j], distance])
+        temp = np.round(temp, 6)
+        output2 = pd.DataFrame(temp, columns=col)
+        tfilename = "distance_from_img%03d.csv"%(j)
+        output2.to_csv(path + '/' + tfilename, index=False, header=False)
+
+    table = np.round(table, 6)
+    output = pd.DataFrame(table, columns=col)
+    output.to_csv(path + '/' + "totalDist_p_from_img.csv", index=False, header=False)
 
 #################################################################################################
 # https://www.learnopencv.com/rotation-matrix-to-euler-angles/
@@ -710,7 +755,7 @@ class StereoCalibration(object):
             self.imgpoints_l.append(img_point_l)
             self.imgpoints_r.append(img_point_r)
 
-        m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, tranx, trany, tranz, rotx, roty, rotz, calib_res = load_value_from_json(
+        m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res = load_value_from_json(
             cal_loadjson)
 
         camera_matrix_l = np.zeros((3, 3), np.float64)
@@ -723,9 +768,9 @@ class StereoCalibration(object):
         dist_coef_l = np.zeros((1, 5), np.float64)
         dist_coef_l[0][0] = m_k1
         dist_coef_l[0][1] = m_k2
-        dist_coef_l[0][2] = 0.0
-        dist_coef_l[0][3] = 0.0
-        dist_coef_l[0][4] = 0.0
+        dist_coef_l[0][2] = m_k3
+        dist_coef_l[0][3] = m_k4
+        dist_coef_l[0][4] = m_k5
 
         camera_matrix_r = np.zeros((3, 3), np.float64)
         camera_matrix_r[0][0] = -abs(s_fx)
@@ -737,9 +782,9 @@ class StereoCalibration(object):
         dist_coef_r = np.zeros((1, 5), np.float64)
         dist_coef_r[0][0] = s_k1
         dist_coef_r[0][1] = s_k2
-        dist_coef_r[0][2] = 0.0
-        dist_coef_r[0][3] = 0.0
-        dist_coef_r[0][4] = 0.0
+        dist_coef_r[0][2] = s_k3
+        dist_coef_r[0][3] = s_k4
+        dist_coef_r[0][4] = s_k5
 
         self.M1 = camera_matrix_l
         self.d1 = dist_coef_l
@@ -879,14 +924,17 @@ class StereoCalibration(object):
         flags |= cv2.CALIB_FIX_K4
         flags |= cv2.CALIB_FIX_K5
 
-        m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, tranx, trany, tranz, rotx, roty, rotz, calib_res \
+        m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res \
             = load_value_from_json(cal_loadjson)
 
-        m_fx = m_fy = s_fx = s_fy = 1470.0
-        m_cx = s_cx = 640
-        m_cy = s_cy = 482
-        m_k1 = s_k1 = -0.1
-        m_k2 = s_k2 = -0.2
+        m_fx = m_fy = s_fx = s_fy = default_camera_param_f
+        m_cx = s_cx = default_camera_param_cx
+        m_cy = s_cy = default_camera_param_cy
+        m_k1 = s_k1 = default_camera_param_k1
+        m_k2 = s_k2 = default_camera_param_k2
+        m_k3 = s_k3 = default_camera_param_k3
+        m_k4 = s_k4 = default_camera_param_k4
+        m_k5 = s_k5 = default_camera_param_k5
 
         camera_matrix_l = np.zeros((3, 3), np.float64)
         camera_matrix_l[0][0] = abs(m_fx)
@@ -898,9 +946,9 @@ class StereoCalibration(object):
         dist_coef_l = np.zeros((1, 5), np.float64)
         dist_coef_l[0][0] = m_k1
         dist_coef_l[0][1] = m_k2
-        dist_coef_l[0][2] = 0.0
-        dist_coef_l[0][3] = 0.0
-        dist_coef_l[0][4] = 0.0
+        dist_coef_l[0][2] = m_k3
+        dist_coef_l[0][3] = m_k4
+        dist_coef_l[0][4] = m_k5
 
         camera_matrix_r = np.zeros((3, 3), np.float64)
         camera_matrix_r[0][0] = abs(s_fx)
@@ -912,9 +960,9 @@ class StereoCalibration(object):
         dist_coef_r = np.zeros((1, 5), np.float32)
         dist_coef_r[0][0] = s_k1
         dist_coef_r[0][1] = s_k2
-        dist_coef_r[0][2] = 0.0
-        dist_coef_r[0][3] = 0.0
-        dist_coef_r[0][4] = 0.0
+        dist_coef_r[0][2] = s_k3
+        dist_coef_r[0][3] = s_k4
+        dist_coef_r[0][4] = s_k5
 
         # self.M1 = camera_matrix_l
         # self.d1 = dist_coef_l
@@ -1033,7 +1081,7 @@ class StereoCalibration(object):
         # flags |= cv2.CALIB_FIX_K4
         # flags |= cv2.CALIB_FIX_K5
 
-        m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, tranx, trany, tranz, rotx, roty, rotz, calib_res \
+        m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res \
             = load_value_from_json(cal_loadjson)
 
         # m_fx = m_fy = s_fx = s_fy = 1470.0
@@ -1052,9 +1100,9 @@ class StereoCalibration(object):
         dist_coef_l = np.zeros((1, 5), np.float32)
         dist_coef_l[0][0] = m_k1
         dist_coef_l[0][1] = m_k2
-        dist_coef_l[0][2] = 0.0
-        dist_coef_l[0][3] = 0.0
-        dist_coef_l[0][4] = 0.0
+        dist_coef_l[0][2] = m_k3
+        dist_coef_l[0][3] = m_k4
+        dist_coef_l[0][4] = m_k5
 
         camera_matrix_r = np.zeros((3, 3), np.float32)
         camera_matrix_r[0][0] = abs(s_fx)
@@ -1066,9 +1114,9 @@ class StereoCalibration(object):
         dist_coef_r = np.zeros((1, 5), np.float32)
         dist_coef_r[0][0] = s_k1
         dist_coef_r[0][1] = s_k2
-        dist_coef_r[0][2] = 0.0
-        dist_coef_r[0][3] = 0.0
-        dist_coef_r[0][4] = 0.0
+        dist_coef_r[0][2] = s_k3
+        dist_coef_r[0][3] = s_k4
+        dist_coef_r[0][4] = s_k5
 
         self.M1 = camera_matrix_l
         self.d1 = dist_coef_l
@@ -1278,7 +1326,7 @@ class StereoCalibration(object):
         # flags |= cv2.CALIB_FIX_K4
         # flags |= cv2.CALIB_FIX_K5
 
-        m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, tranx, trany, tranz, rotx, roty, rotz, calib_res \
+        m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res \
             = load_value_from_json(cal_loadjson)
 
         camera_matrix_l = np.zeros((3, 3), np.float32)
@@ -1291,9 +1339,9 @@ class StereoCalibration(object):
         dist_coef_l = np.zeros((1, 5), np.float32)
         dist_coef_l[0][0] = m_k1
         dist_coef_l[0][1] = m_k2
-        dist_coef_l[0][2] = 0.0
-        dist_coef_l[0][3] = 0.0
-        dist_coef_l[0][4] = 0.0
+        dist_coef_l[0][2] = m_k3
+        dist_coef_l[0][3] = m_k4
+        dist_coef_l[0][4] = m_k5
 
         camera_matrix_r = np.zeros((3, 3), np.float32)
         camera_matrix_r[0][0] = abs(s_fx)
@@ -1305,9 +1353,9 @@ class StereoCalibration(object):
         dist_coef_r = np.zeros((1, 5), np.float32)
         dist_coef_r[0][0] = s_k1
         dist_coef_r[0][1] = s_k2
-        dist_coef_r[0][2] = 0.0
-        dist_coef_r[0][3] = 0.0
-        dist_coef_r[0][4] = 0.0
+        dist_coef_r[0][2] = s_k3
+        dist_coef_r[0][3] = s_k4
+        dist_coef_r[0][4] = s_k5
 
         self.M1 = camera_matrix_l
         self.d1 = dist_coef_l
@@ -1348,13 +1396,13 @@ class StereoCalibration(object):
         # self.Mr[0][0] = - np.float64(self.Mr[0][0])
         # self.Mr[1][1] = - np.float64(self.Mr[1][1])
 
-        if (enable_debug_dispatiry_estimation_display == 1):
+        if (enable_debug_dispatiry_estimation_display == 1 or enable_debug_dispatiry_estimation_display == 2):
             self.mapL1, self.mapL2, self.mapR1, self.mapR2, _, _, _, _ = self.stereo_rectify(img_shape, self.Ml,
                                                                                              self.dl, self.Mr,
                                                                                              self.dr, self.R,
                                                                                              self.T, images_left[0],
                                                                                              images_right[0])
-            self.depth_using_stereo(img_shape, self.Ml, self.dl, self.Mr, self.dr, self.R, self.T)
+            self.depth_using_stereo(img_shape, self.Ml, self.dl, self.Mr, self.dr, self.R, self.T, images_left[0], images_right[0])
 
         stero_rms, re_left, re_right = self.calc_rms_stereo2(self.objpoints, self.imgpoints_l, self.imgpoints_r,
                                                              self.Ml, self.dl, self.Mr, self.dr, self.R, self.T)
@@ -1495,18 +1543,18 @@ class StereoCalibration(object):
 
         # default param (if you need to change default param, please change this value)
         camera_matrix = np.zeros((3, 3), np.float32)
-        camera_matrix[0][0] = 1470.0
-        camera_matrix[1][1] = 1470.0
-        camera_matrix[0][2] = 640.0
-        camera_matrix[1][2] = 482.0
+        camera_matrix[0][0] = default_camera_param_f
+        camera_matrix[1][1] = default_camera_param_f
+        camera_matrix[0][2] = default_camera_param_cx
+        camera_matrix[1][2] = default_camera_param_cy
         camera_matrix[2][2] = 1.0
 
         dist_coef = np.zeros((1, 5), np.float32)
-        dist_coef[0][0] = -0.1
-        dist_coef[0][1] = -0.2
-        dist_coef[0][2] = 0.0
-        dist_coef[0][3] = 0.0
-        dist_coef[0][4] = 0.0
+        dist_coef[0][0] = default_camera_param_k1
+        dist_coef[0][1] = default_camera_param_k2
+        dist_coef[0][2] = default_camera_param_k3
+        dist_coef[0][3] = default_camera_param_k4
+        dist_coef[0][4] = default_camera_param_k5
 
         rt, self.M1, self.d1, self.r1, self.t1 = cv2.calibrateCamera(self.objpoints, self.imgpoints_l, img_shape,
                                                                      camera_matrix,
@@ -1566,14 +1614,9 @@ class StereoCalibration(object):
         self.camera_model = self.stereo_camera_calibrate(img_shape)
         # print(self.camera_model)
 
-        # self.Ml[0][0] = - np.float64(self.Ml[0][0])
-        # self.Ml[1][1] = - np.float64(self.Ml[1][1])
-        # self.Mr[0][0] = - np.float64(self.Mr[0][0])
-        # self.Mr[1][1] = - np.float64(self.Mr[1][1])
-
-        if(enable_debug_dispatiry_estimation_display == 1):
+        if(enable_debug_dispatiry_estimation_display == 1 or enable_debug_dispatiry_estimation_display == 2):
             self.mapL1, self.mapL2, self.mapR1, self.mapR2, _ , _ , _ , _ = self.stereo_rectify(img_shape, self.Ml, self.dl, self.Mr, self.dr, self.R, self.T, images_left[0], images_right[0])
-            self.depth_using_stereo(img_shape, self.Ml, self.dl, self.Mr, self.dr, self.R, self.T)
+            self.depth_using_stereo(img_shape, self.Ml, self.dl, self.Mr, self.dr, self.R, self.T, images_left[0], images_right[0])
 
         stero_rms, re_left, re_right = self.calc_rms_stereo2(self.objpoints, self.imgpoints_l, self.imgpoints_r, self.Ml, self.dl, self.Mr, self.dr, self.R, self.T)
         # stero_rms = self.calc_rms_stereo2(self.objpoints, self.imgpoints_l, self.imgpoints_r, temp_M1, temp_d1, temp_M2, temp_d2, self.R, self.T)
@@ -1601,13 +1644,12 @@ class StereoCalibration(object):
         # flags |= cv2.CALIB_FIX_K4
         # flags |= cv2.CALIB_FIX_K5
 
-
         stereocalib_criteria = (cv2.TERM_CRITERIA_MAX_ITER +
                                 cv2.TERM_CRITERIA_EPS, 100, 1e-5)
         lgit_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.01)
         lip_criteria = (cv2.TERM_CRITERIA_MAX_ITER    , 1, 0.5)
-        # stereo calibration test code for varify
 
+        # stereo calibration test code for varify
         # ret, Ml, dl, Mr, dr, R, T, E, F = cv2.stereoCalibrate(
         #     self.objpoints, self.imgpoints_l,
         #     self.imgpoints_r, self.M1, self.d1, self.M2, self.d2, dims,
@@ -1637,7 +1679,6 @@ class StereoCalibration(object):
         # print('userRT', R,'\n', T[0], T[1],T[2])
         # print('Ml', Ml2, dl2, 'M2' , Mr2, dr2, '\nret_RT', R2,'\n', T2[0], T2[1],T2[2] )
         # print('*'*30, 'rms3_2', ret2 )
-
 
         (major, minor, mdumuy) = check_version_of_opencv()
         print('opencv', major, minor, mdumuy)
@@ -1817,13 +1858,13 @@ class StereoCalibration(object):
         #print(gray_l.shape[::-1], type(gray_l.shape[::-1]))
         #img_shape = gray_r.shape[::-1]
 
-        print(len(local_objpoints))
-        print(len(local_imgpoints_l))
-        print(len(local_imgpoints_r))
+        # print(len(local_objpoints))
+        # print(len(local_imgpoints_l))
+        # print(len(local_imgpoints_r))
 
-        save_coordinate_both_stereo_obj_img_rectify(self.cal_path, local_objpoints, local_imgpoints_l, local_imgpoints_r, count_ok_dual)
+        save_coordinate_using_rectify(self.cal_path, local_objpoints, local_imgpoints_l, local_imgpoints_r, count_ok_dual)
 
-        return local_objpoints, local_imgpoints_l, local_imgpoints_r
+        return count_ok_dual, local_objpoints, local_imgpoints_l, local_imgpoints_r
 
     def stereo_rectify(self, img_shape, camera_matrix_l, dist_coeffs_l, camera_matrix_r, dist_coeffs_r, R, T, filename_l, filename_r):
         print("-> process of sreteo rectify")
@@ -1862,9 +1903,6 @@ class StereoCalibration(object):
         # ret, gray_l = cv2.threshold(gray_l, 40, 200, cv2.THRESH_BINARY)
         # ret, gray_r = cv2.threshold(gray_r, 40, 200, cv2.THRESH_BINARY)
 
-        frameL = gray_l     #img_l
-        frameR = gray_r     #img_r
-
         # STAGE 4: rectification of images (make scan lines align left <-> right
         # N.B.  "alpha=0 means that the rectified images are zoomed and shifted so that
         # only valid pixels are visible (no black areas after rectification). alpha=1 means
@@ -1892,8 +1930,8 @@ class StereoCalibration(object):
         # print("\n-> performing rectification")
         # print('\t',mapL1.shape, mapL2.size)
         # undistort and rectify based on the mappings (could improve interpolation and image border settings here)
-        undistorted_rectifiedL = cv2.remap(frameL, mapL1, mapL2, cv2.INTER_LINEAR);
-        undistorted_rectifiedR = cv2.remap(frameR, mapR1, mapR2, cv2.INTER_LINEAR);
+        undistorted_rectifiedL = cv2.remap(gray_l, mapL1, mapL2, cv2.INTER_LINEAR);
+        undistorted_rectifiedR = cv2.remap(gray_r, mapR1, mapR2, cv2.INTER_LINEAR);
 
         # display data
         print('\nLeft  3x4 proj in new (rectified) coordinate ', *PL, sep='\n')
@@ -1918,71 +1956,59 @@ class StereoCalibration(object):
         local_imgpoints_l = []  # 2d points in image plane.
         local_imgpoints_r = []  # 2d points in image plane.
 
-        # display image
-        t_refpoints, t_lpoint, t_rpoint= self.extract_point_from_chart(undistorted_rectifiedL,undistorted_rectifiedR)
+        # extract point from chart and save
+        t_num, t_refpoints, t_lpoint, t_rpoint= self.extract_point_from_chart(undistorted_rectifiedL,undistorted_rectifiedR)
+        t_focal = PR[0][0]
+        t_baseline = PR[0][3] / t_focal
+        save_coordinate_using_rectify_with_distance(self.cal_path, t_refpoints, t_lpoint, t_rpoint, t_baseline, t_focal, t_num)
 
-        # Find epilines corresponding to points in right image (second image) and
-        # drawing its lines on left image
-        pts1 = np.array(t_lpoint).reshape(-1, 1, 2)
-        pts2 = np.array(t_rpoint).reshape(-1, 1, 2)
-        lines1 = cv2.computeCorrespondEpilines(pts2, 2, self.F)
-        lines1 = lines1.reshape(-1, 3)
-        img5, img6 = self.draw_epipolar_lines(undistorted_rectifiedL, undistorted_rectifiedR, lines1, pts1, pts2)
+        if(enable_debug_dispatiry_estimation_display == 2):
 
-        cv2.imshow("img5 LEFT Camera rectification Input", img5);
-        cv2.imshow("img5 RIGHT Camera rectification Input", img6);
-        cv2.waitKey(0)
+            # Find epilines corresponding to points in right image (second image) and
+            # drawing its lines on left image
+            pts1 = np.array(t_lpoint).reshape(-1, 1, 2)
+            pts2 = np.array(t_rpoint).reshape(-1, 1, 2)
+            lines1 = cv2.computeCorrespondEpilines(pts2, 2, self.F)
+            lines1 = lines1.reshape(-1, 3)
+            img5, img6 = self.draw_epipolar_lines(undistorted_rectifiedL, undistorted_rectifiedR, lines1, pts1, pts2)
 
-        # Find epilines corresponding to points in left image (first image) and
-        # drawing its lines on right image
-        lines2 = cv2.computeCorrespondEpilines(pts1, 1,  self.F)
-        lines2 = lines2.reshape(-1, 3)
-        img3, img4 = self.draw_epipolar_lines(undistorted_rectifiedR, undistorted_rectifiedL, lines2, pts2, pts1)
+            cv2.imshow("img5 LEFT Camera rectification Input", img5);
+            cv2.imshow("img5 RIGHT Camera rectification Input", img6);
+            cv2.waitKey(500)
 
-        cv2.imshow("img5 LEFT Camera rectification Input", img4);
-        cv2.imshow("img5 RIGHT Camera rectification Input", img3);
-        cv2.waitKey(0)
+            # Find epilines corresponding to points in left image (first image) and
+            # drawing its lines on right image
+            lines2 = cv2.computeCorrespondEpilines(pts1, 1,  self.F)
+            lines2 = lines2.reshape(-1, 3)
+            img3, img4 = self.draw_epipolar_lines(undistorted_rectifiedR, undistorted_rectifiedL, lines2, pts2, pts1)
+
+            cv2.imshow("img4 LEFT Camera rectification Input", img4);
+            cv2.imshow("img4 RIGHT Camera rectification Input", img3);
+            cv2.waitKey(0)
 
         # cv2.imshow("LEFT Camera rectification Input", undistorted_rectifiedL);
         # cv2.imshow("RIGHT Camera rectification Input", undistorted_rectifiedR);
         self.calc_distance_using_stereo_point(t_refpoints, t_lpoint, t_rpoint, PR)
         self.depth_using_stereo_param(undistorted_rectifiedL,undistorted_rectifiedR)
-        cv2.waitKey(0)
+        # cv2.waitKey(0)
         return mapL1, mapL2, mapR1, mapR2, RL, PL, RR, PR
 
-    def draw_epipolar_lines(self, img1, img2, lines, pts1, pts2):
-        ''' img1 - image on which we draw the epilines for the points in img2
-            lines - corresponding epilines '''
-        r, c = img1.shape
-        print(r, c)
-        img1 = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
-        img2 = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
-        for r, pt1, pt2 in zip(lines, pts1, pts2):
-            print("(%.6f,%1.6f,%.6f)"%(r[0],r[1],r[2]), *pt1, *pt2)
-            color = tuple(np.random.randint(0, 255, 3).tolist())
-            x0, y0 = map(int, [0, -r[2] / r[1]])
-            x1, y1 = map(int, [c, -(r[2] + r[0] * c) / r[1]])
-            print("line (%d,%d)->(%d,%d)"%(x0, y0, x1, y1))
-            img1 = cv2.line(img1, (x0, y0), (x1, y1), color, 1)
-            img1 = cv2.circle(img1, tuple(*pt1), 5, color, -1)
-            img2 = cv2.circle(img2, tuple(*pt2), 5, color, -1)
-        return img1, img2
-
+    #calculate distance
     def calc_distance_using_stereo_point(selfs, refpoint, lpoint, rpoint, PR):
         left_point = np.array(lpoint)
         right_point = np.array(rpoint)
         # print(left_point.shape, right_point.shape)
         subpoint = left_point - right_point
         # print('subpoint', subpoint.shape, '\n', subpoint)
-        focal = PR[0][0]
-        baseline = PR[0][3] / focal
-        distance = (focal * baseline) / subpoint
-        print('distance', distance)
+        t_focal = PR[0][0]
+        t_baseline = PR[0][3] / t_focal
+        t_distance = (t_focal * t_baseline) / subpoint
+        print('\ndistance', t_distance.T[0], sep='\n')
         pass
 
     def depth_using_stereo_param(self, left, right):
-        fx = 1482.88842705  # lense focal length
-        baseline = 93.40152  # distance in mm between the two cameras
+        fx = 1476.77626  # lense focal length
+        baseline = -0.0921702  #93.40152  # distance in mm between the two cameras
         disparities = 16  # num of disparities to consider = 16xn
         block = 31  # block size to match
         units = 0.512  # depth units, adjusted for the output to fit in one byte
@@ -2006,7 +2032,7 @@ class StereoCalibration(object):
         plt.imshow(colorized_depth)
         plt.show()
 
-    def depth_using_stereo(self, img_shape, camera_matrix_l, dist_coeffs_l, camera_matrix_r, dist_coeffs_r, R, T):
+    def depth_using_stereo(self, img_shape, camera_matrix_l, dist_coeffs_l, camera_matrix_r, dist_coeffs_r, R, T, filename_l, filename_r):
         # img_l = cv2.imread('./image/LEFT/LEFT13.jpg')
         # img_r = cv2.imread('./image/RIGHT/RIGHT13.jpg')
         # img_l = cv2.imread('./image33/LEFT/LEFT_Step_112.png')
@@ -2015,9 +2041,10 @@ class StereoCalibration(object):
         #img_r = cv2.imread('./data/LGIT_data/RIGHT/RIGHT_Step_11.png')
         # img_l = cv2.imread('./dump_pattern/LEFT/Cal0_00001.png')
         # img_r = cv2.imread('./dump_pattern/RIGHT/Cal1_00001.png')
-        filename_l = 'D:/data/Calibration/Right_Zig/ALL/LEFT/CaptureImage_Left_005_01.raw'
-        filename_r = 'D:/data/Calibration/Right_Zig/ALL/RIGHT/CaptureImage_Right_005_01.raw'
-        print(filename_l, filename_r)
+        # filename_l = 'D:/data/Calibration/Right_Zig/ALL/LEFT/CaptureImage_Left_005_01.raw'
+        # filename_r = 'D:/data/Calibration/Right_Zig/ALL/RIGHT/CaptureImage_Right_005_01.raw'
+        print(filename_l, '\n',filename_r)
+        # for i, fname in enumerate(images_right):
         if (select_png_or_raw == 1):
             fd_l = open(filename_l, 'rb')
             fd_r = open(filename_r, 'rb')
@@ -2028,22 +2055,23 @@ class StereoCalibration(object):
             cols = int(length / rows)
             f_l = np.fromfile(fd_l, dtype=np.uint8, count=rows * cols)
             f_r = np.fromfile(fd_r, dtype=np.uint8, count=rows * cols)
-            gray_l = img_l = f_l.reshape((cols, rows))
-            gray_r = img_r = f_r.reshape((cols, rows))
-
+            gray_l = f_l.reshape((cols, rows))
+            gray_r = f_r.reshape((cols, rows))
             fd_l.close
             fd_r.close
+            img_l = cv2.cvtColor(gray_l, cv2.COLOR_GRAY2BGR)
+            img_r = cv2.cvtColor(gray_r, cv2.COLOR_GRAY2BGR)
 
         else:
             img_l = cv2.imread(filename_l)
             img_r = cv2.imread(filename_r)
             gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
             gray_r = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)
+        # gray_l = cv2.adaptiveThreshold(gray_l, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
+        # gray_r = cv2.adaptiveThreshold(gray_r, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
+        # ret, gray_l = cv2.threshold(gray_l, 40, 200, cv2.THRESH_BINARY)
+        # ret, gray_r = cv2.threshold(gray_r, 40, 200, cv2.THRESH_BINARY)
 
-        # frameL = img_l
-        # frameR = img_r
-        # frameL = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
-        # frameR = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)
         # STAGE 5: calculate stereo depth information
         # uses a modified H. Hirschmuller algorithm [HH08] that differs (see opencv manual)
         # parameters can be adjusted, current ones from [Hamilton / Breckon et al. 2013]
@@ -2089,10 +2117,13 @@ class StereoCalibration(object):
         # display disparity
         cv2.imshow("SGBM Stereo Disparity - Output", disparity_scaled);
         im_color = cv2.applyColorMap(disparity_scaled, cv2.COLORMAP_JET)
-#lip        # plt.imshow(im_color, 'gray')
-#lip        # plt.imshow(disparity_scaled, 'gray')
-#lip        # plt.show()
-        cv2.waitKey(0)
+#lip        #
+        plt.imshow(im_color, 'gray')
+#lip        #
+        plt.imshow(disparity_scaled, 'gray')
+#lip        #
+        plt.show()
+        # cv2.waitKey(0)
 
     def draw_xyz_axis(self, img, corners, imgpts):
         corner = tuple(corners[0].ravel())
@@ -2183,62 +2214,6 @@ class StereoCalibration(object):
 
                     cv2.imshow('poseEstimate_Right _ '+str(i+1)+'st image  '+images_right[i], img)
                     k = cv2.waitKey(0)
-
-
-    #
-    # def pose_estimation_circle(self, cal_path, mtx, dist):
-    #     print('pose estimation circle')
-    #     # input - all image, output - json, func- mono and stereo calib
-    #     # images_right = glob.glob(cal_path + 'RIGHT/*.JPG')
-    #     # images_right += glob.glob(cal_path + 'RIGHT/*.BMP')
-    #     # images_right += glob.glob(cal_path + 'RIGHT/*.PNG')
-    #     images_left = glob.glob(cal_path + '/LEFT/*.JPG')
-    #     images_left += glob.glob(cal_path + '/LEFT/*.PNG')
-    #     images_left += glob.glob(cal_path + '/LEFT/*.BMP')
-    #
-    #     for i, fname in enumerate(images_left):
-    #         img_l = cv2.imread(images_left[i])
-    #         gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
-    #         # gray_l = cv2.adaptiveThreshold(gray_l, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
-    #         ret_l, corners_l = cv2.findCirclesGrid(gray_l, (10, 10), flags=cv2.CALIB_CB_SYMMETRIC_GRID)
-    #
-    #         print(ret_l, corners_l)
-    #         if ret_l == True:
-    #             #corners2 = cv2.cornerSubPix(gray_l, corners_l, (11, 11), (-1, -1), self.criteria)
-    #             # Find the rotation and translation vectors.
-    #             ret, rvecs, tvecs = cv2.solvePnP(self.objp, corners_l, mtx, dist)
-    #             # project 3D points to image plane
-    #             imgpts, jac = cv2.projectPoints(self.axis, rvecs, tvecs, mtx, dist)
-    #             img = self.draw(img_l, corners_l, imgpts)
-    #             cv2.imshow('img', img)
-    #             k = cv2.waitKey(0)
-    #
-    # def pose_estimation_squre(self, cal_path, mtx, dist):
-    #     print('pose estimation sqaure')
-    #     # input - all image, output - json, func- mono and stereo calib
-    #     images_right = glob.glob(cal_path + '/RIGHT/*.JPG')
-    #     images_right += glob.glob(cal_path + '/RIGHT/*.BMP')
-    #     images_right += glob.glob(cal_path + '/RIGHT/*.PNG')
-    #     images_left = glob.glob(cal_path + '/LEFT/*.JPG')
-    #     images_left += glob.glob(cal_path + '/LEFT/*.PNG')
-    #     images_left += glob.glob(cal_path + '/LEFT/*.BMP')
-    #
-    #     for i, fname in enumerate(images_right):
-    #         img_l = cv2.imread(images_left[i])
-    #         img_r = cv2.imread(images_right[i])
-    #
-    #         gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
-    #         gray_r = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)
-    #         ret, corners = cv2.findChessboardCorners(gray_l, (9, 6), None)
-    #         if ret == True:
-    #             corners2 = cv2.cornerSubPix(gray_l, corners, (11, 11), (-1, -1), self.criteria)
-    #             # Find the rotation and translation vectors.
-    #             ret, rvecs, tvecs = cv2.solvePnP(self.objp, corners2, mtx, dist)
-    #             # project 3D points to image plane
-    #             imgpts, jac = cv2.projectPoints(self.axis, rvecs, tvecs, mtx, dist)
-    #             img = self.draw(img_l, corners2, imgpts)
-    #             cv2.imshow('img', img)
-    #             k = cv2.waitKey(0)
 
     def reprojection_error(self, obj_points, img_points, rvecs, tvecs, camera_matrix, dist_coeffs):
         min_error = 1
@@ -2564,6 +2539,24 @@ class StereoCalibration(object):
         else:
             print("error - invalid point")
         pass
+
+    def draw_epipolar_lines(self, img1, img2, lines, pts1, pts2):
+        ''' img1 - image on which we draw the epilines for the points in img2
+            lines - corresponding epilines '''
+        r, c = img1.shape
+        print(r, c)
+        img1 = cv2.cvtColor(img1, cv2.COLOR_GRAY2BGR)
+        img2 = cv2.cvtColor(img2, cv2.COLOR_GRAY2BGR)
+        for r, pt1, pt2 in zip(lines, pts1, pts2):
+            print("(%.6f,%1.6f,%.6f)"%(r[0],r[1],r[2]), *pt1, *pt2)
+            color = tuple(np.random.randint(0, 255, 3).tolist())
+            x0, y0 = map(int, [0, -r[2] / r[1]])
+            x1, y1 = map(int, [c, -(r[2] + r[0] * c) / r[1]])
+            print("line (%d,%d)->(%d,%d)"%(x0, y0, x1, y1))
+            img1 = cv2.line(img1, (x0, y0), (x1, y1), color, 1)
+            img1 = cv2.circle(img1, tuple(*pt1), 5, color, -1)
+            img2 = cv2.circle(img2, tuple(*pt2), 5, color, -1)
+        return img1, img2
 
     def display_reprojection_point_and_image_point(self, cal_path, imgpoint_left, imgpoint_right, reproject_left, reproject_right):
         if (enable_debug_display_image_point_and_reproject_point == 0):
