@@ -1962,9 +1962,40 @@ class StereoCalibration(object):
 
         # extract point from chart and save
         t_num, t_refpoints, t_lpoint, t_rpoint= self.extract_point_from_chart(undistorted_rectifiedL,undistorted_rectifiedR)
+
+        #todo - undistort -> coordinate
+        # print("self.imgpoints_l[0]",self.imgpoints_l[0])
+        dst = cv2.undistortPoints(self.imgpoints_l[0], camera_matrix_l, dist_coeffs_l, R=RL, P=PL)
+        dst2 = cv2.undistortPoints(self.imgpoints_r[0], camera_matrix_r, dist_coeffs_r, R=RR, P=PR)
+        # cv::triangulatePoints(P1, P2, imgWutBok, imgWutTyl, point4D);
+        print("dst\n",dst)
+        print("dst2\n", dst2)
+        tmat = PL[:, 0:3]
+        tmat = tmat.reshape(3,3)
+        tmat_d = np.zeros((1, 5), np.float32)
+        tmat2 = PR[:, 0:3]
+        print(tmat)
+        print(tmat2)
+        _, rvec_l, tvec_l, _ = cv2.solvePnPRansac(self.objpoints[0], self.imgpoints_l[0], camera_matrix_l, dist_coeffs_l)
+        _, rvec_r, tvec_r, _ = cv2.solvePnPRansac(self.objpoints[0], self.imgpoints_r[0], camera_matrix_r, dist_coeffs_r)
+        t2 = np.array([[0],[0],[0]])
+        tR, tT, _ , _ ,_ , _ , _ , _, _, _= cv2.composeRT( rvec_l, tvec_l, cv2.Rodrigues(RL)[0], t2)
+        tR2, tT2, _, _, _, _, _, _, _, _ = cv2.composeRT(rvec_r, tvec_r, cv2.Rodrigues(RR)[0], t2)
+
+        # rp_l, _ = cv2.projectPoints(self.objpoints[0], rvec_l, tvec_l, tmat, dist_coeffs_l)
+        rp_l, _ = cv2.projectPoints(self.objpoints[0], tR, tT, tmat, tmat_d)
+        rp_r, _ = cv2.projectPoints(self.objpoints[0], tR2, tT2, tmat2, tmat_d)
+        print('rp_l', rp_l)
+        print('rp_r', rp_r)
+
+        # cvUndistortPoints(_pts, _pts, cameraMatrix, distCoeffs, R, newCameraMatrix);
+        cv2.waitKey(0)
+
+
         t_focal = PR[0][0]
         t_baseline = PR[0][3] / t_focal
         save_coordinate_using_rectify_with_distance(self.cal_path, t_refpoints, t_lpoint, t_rpoint, t_baseline, t_focal, t_num)
+
 
         # original image
         # # Find epilines corresponding to points in right image (second image) and
@@ -2017,7 +2048,6 @@ class StereoCalibration(object):
         # cv2.imshow("RIGHT Camera rectification Input", undistorted_rectifiedR);
         self.calc_distance_using_stereo_point(t_refpoints, t_lpoint, t_rpoint, PR)
         self.depth_using_stereo_param(undistorted_rectifiedL,undistorted_rectifiedR)
-        # cv2.waitKey(0)
         return mapL1, mapL2, mapR1, mapR2, RL, PL, RR, PR
 
     #calculate distance
