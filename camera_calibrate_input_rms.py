@@ -16,11 +16,12 @@
 # to do
 # 1. load, save k3, k4, k5 on left,right    - ok
 # 2. disparity distance from pattern        - ok
-# 3. distinguish minus focal on intrinsic
+# 3. save Essensial and Fundamantal         - ok
+# 4. distinguish minus focal on intrinsic
 # 4. distinguish left to right and right to left on extrinsic
 # 5. disparity distance from point
 # 6. auto parameter such as one, repeat using point, circle, square
-# 7. save Essensial and Fundamantal
+
 # 8. retification json data with Q
 
 
@@ -212,7 +213,7 @@ def load_value_from_json(filename):
 
 
 ###save with result to stereo_config.json
-def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp):
+def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp, E, F):
     # fpd = pd.read_json(filename)
     # print("modify_value_from_json")
     fp = open(filename + '_sample.json')
@@ -250,7 +251,11 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
     fjs["master"]["lens_params"]['calib_res'] = imgsize
     fjs["slave"]["lens_params"]['calib_res'] = imgsize
 
-    fjs["reprojection_error"] = ret_rp
+    fjs["reprojection_error"] = np.round(ret_rp,8)
+    tE = np.round(E, 8)
+    tF = np.round(F, 8)
+    fjs["essensial_matrix"] = tE[0][0],tE[0][1],tE[0][2],tE[1][0],tE[1][1],tE[1][2],tE[2][0],tE[2][1],tE[2][2]
+    fjs["fundamental_matrix"] = tF[0][0],tF[0][1],tF[0][2],tF[1][0],tF[1][1],tF[1][2],tF[2][0],tF[2][1],tF[2][2]
 
     wfp = open(path + '/' +filename + '_result_l_to_r' + '.json', 'w', encoding='utf-8')
     print( path + '/' +filename+ '_result_l_to_r' + '.json')
@@ -259,7 +264,7 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
     fp.close()
     wfp.close()
 
-def modify_value_from_json_from_plus_to_minus_focal(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp):
+def modify_value_from_json_from_plus_to_minus_focal(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp, E, F):
     # fpd = pd.read_json(filename)
     # print("modify_value_from_json_from_plus_to_minus_focal")
     fp = open(filename + '_sample.json')
@@ -295,7 +300,11 @@ def modify_value_from_json_from_plus_to_minus_focal(path, filename, M1, d1, M2, 
     fjs["master"]["lens_params"]['calib_res'] = imgsize
     fjs["slave"]["lens_params"]['calib_res'] = imgsize
 
-    fjs["reprojection_error"] = ret_rp
+    fjs["reprojection_error"] = np.round(ret_rp,8)
+    tE = np.round(E, 8)
+    tF = np.round(F, 8)
+    fjs["essensial_matrix"] = tE[0][0],tE[0][1],tE[0][2],tE[1][0],tE[1][1],tE[1][2],tE[2][0],tE[2][1],tE[2][2]
+    fjs["fundamental_matrix"] = tF[0][0],tF[0][1],tF[0][2],tF[1][0],tF[1][1],tF[1][2],tF[2][0],tF[2][1],tF[2][2]
 
     wfp = open(path + '/' +filename + '_result_r_to_l' + '.json', 'w', encoding='utf-8')
     json.dump(fjs, wfp, indent=4)
@@ -888,7 +897,8 @@ class StereoCalibration(object):
         #stero_rms, re_left, re_right = self.calc_rms_stereo3(self.objpoints, self.imgpoints_l, self.imgpoints_r,
         #                                                      self.M1, self.d1, self.M2, self.d2, w_Rt_c[0:3, 0:3], w_Rt_c[0:3, 3])
         ret_rp = 0.00
-        modify_value_from_json_from_plus_to_minus_focal(self.cal_path, "stereo_config",self.M1, self.d1, self.M2, self.d2, c_Rt_w[0:3, 0:3], c_Rt_w[0:3, 3], img_shape, ret_rp)
+        tE = tF = np.eye(3)
+        modify_value_from_json_from_plus_to_minus_focal(self.cal_path, "stereo_config",self.M1, self.d1, self.M2, self.d2, c_Rt_w[0:3, 0:3], c_Rt_w[0:3, 3], img_shape, ret_rp, tE, tF)
 
         self.display_reprojection_point_and_image_point(cal_path, self.imgpoints_l, self.imgpoints_r, re_left, re_right)
 
@@ -1745,7 +1755,7 @@ class StereoCalibration(object):
         print("=" * 50)
 
         #plus focal length, Extrinsic_Left to Right
-        modify_value_from_json(self.cal_path, "stereo_config", Ml, dl, Mr, dr, R, T, dims, ret_rp)
+        modify_value_from_json(self.cal_path, "stereo_config", Ml, dl, Mr, dr, R, T, dims, ret_rp, E, F)
 
         #minus focal length, Extrinsic_Right to Left
         uR = np.zeros((3), np.float64)
@@ -1771,7 +1781,7 @@ class StereoCalibration(object):
         Mr[0][0] = - np.float64(Mr[0][0])
         Mr[1][1] = - np.float64(Mr[1][1])
 
-        modify_value_from_json_from_plus_to_minus_focal(self.cal_path, "stereo_config", Ml, dl, Mr, dr, c_Rt_w[0:3, 0:3], c_Rt_w[0:3, 3], dims, ret_rp)
+        modify_value_from_json_from_plus_to_minus_focal(self.cal_path, "stereo_config", Ml, dl, Mr, dr, c_Rt_w[0:3, 0:3], c_Rt_w[0:3, 3], dims, ret_rp, E, F)
 
         Ml[0][0] = - np.float64(Ml[0][0])
         Ml[1][1] = - np.float64(Ml[1][1])
@@ -1868,8 +1878,6 @@ class StereoCalibration(object):
 
     def stereo_rectify(self, img_shape, camera_matrix_l, dist_coeffs_l, camera_matrix_r, dist_coeffs_r, R, T, filename_l, filename_r):
         print("-> process of sreteo rectify")
-        # img_l = cv2.imread('./image/LEFT/LEFT13.jpg')
-        # img_r = cv2.imread('./image/RIGHT/RIGHT13.jpg')
         # img_l = cv2.imread('./image33/LEFT/LEFT_Step_112.png')
         # img_r = cv2.imread('./image33/RIGHT/RIGHT_Step_112.png')
         #filename_l = 'D:/data/Calibration/Right_Zig/ALL/LEFT/CaptureImage_Left_005_01.raw'
@@ -1952,18 +1960,37 @@ class StereoCalibration(object):
         self.PR = PR
         self.Q = Q
 
-        local_objpoints = []  # 3d point in real world space
-        local_imgpoints_l = []  # 2d points in image plane.
-        local_imgpoints_r = []  # 2d points in image plane.
-
         # extract point from chart and save
         t_num, t_refpoints, t_lpoint, t_rpoint= self.extract_point_from_chart(undistorted_rectifiedL,undistorted_rectifiedR)
         t_focal = PR[0][0]
         t_baseline = PR[0][3] / t_focal
         save_coordinate_using_rectify_with_distance(self.cal_path, t_refpoints, t_lpoint, t_rpoint, t_baseline, t_focal, t_num)
 
-        if(enable_debug_dispatiry_estimation_display == 2):
+        # original image
+        # # Find epilines corresponding to points in right image (second image) and
+        # # drawing its lines on left image
+        # pts1 = np.array(self.imgpoints_l[0]).reshape(-1, 1, 2)
+        # pts2 = np.array(self.imgpoints_r[0]).reshape(-1, 1, 2)
+        # lines1 = cv2.computeCorrespondEpilines(pts2, 2, self.F)
+        # lines1 = lines1.reshape(-1, 3)
+        # img5, img6 = self.draw_epipolar_lines(gray_l, gray_r, lines1, pts1, pts2)
+        #
+        # cv2.imshow("img5 LEFT Camera rectification Input", img5);
+        # cv2.imshow("img5 RIGHT Camera rectification Input", img6);
+        # cv2.waitKey(500)
+        #
+        # # Find epilines corresponding to points in left image (first image) and
+        # # drawing its lines on right image
+        # lines2 = cv2.computeCorrespondEpilines(pts1, 1, self.F)
+        # lines2 = lines2.reshape(-1, 3)
+        # img3, img4 = self.draw_epipolar_lines(gray_r, gray_l, lines2, pts2, pts1)
+        #
+        # cv2.imshow("img4 LEFT Camera rectification Input", img4);
+        # cv2.imshow("img4 RIGHT Camera rectification Input", img3);
+        # cv2.waitKey(0)
 
+        if(enable_debug_dispatiry_estimation_display == 2):
+            # rectified image
             # Find epilines corresponding to points in right image (second image) and
             # drawing its lines on left image
             pts1 = np.array(t_lpoint).reshape(-1, 1, 2)
@@ -2556,6 +2583,8 @@ class StereoCalibration(object):
             img1 = cv2.line(img1, (x0, y0), (x1, y1), color, 1)
             img1 = cv2.circle(img1, tuple(*pt1), 5, color, -1)
             img2 = cv2.circle(img2, tuple(*pt2), 5, color, -1)
+            # cv2.imshow("left",img1)
+            # cv2.waitKey(0)
         return img1, img2
 
     def display_reprojection_point_and_image_point(self, cal_path, imgpoint_left, imgpoint_right, reproject_left, reproject_right):
