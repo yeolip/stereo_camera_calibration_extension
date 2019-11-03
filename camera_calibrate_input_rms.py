@@ -1613,8 +1613,8 @@ class StereoCalibration(object):
         # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
         self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
         # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
-        self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
-        self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
+        # self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
+        # self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
         # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
         # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
         self.stereo_flags |= cv2.CALIB_FIX_K3
@@ -1968,6 +1968,10 @@ class StereoCalibration(object):
         dst = cv2.undistortPoints(self.imgpoints_l[0], camera_matrix_l, dist_coeffs_l, R=RL, P=PL)
         dst2 = cv2.undistortPoints(self.imgpoints_r[0], camera_matrix_r, dist_coeffs_r, R=RR, P=PR)
         # cv::triangulatePoints(P1, P2, imgWutBok, imgWutTyl, point4D);
+        tret = cv2.triangulatePoints(PL,PR,np.array(t_lpoint).reshape(-1, 1, 2), np.array(t_rpoint).reshape(-1, 1, 2))
+        print('tret', tret)
+        print('tret/tret[3]', tret/tret[3])
+
         print("dst\n",dst)
         print("dst2\n", dst2)
         tmat = PL[:, 0:3]
@@ -2433,7 +2437,8 @@ class StereoCalibration(object):
         flog = open(self.cal_path + '/log.txt', 'a')
         print("=" * 50)
         print("RMSE_Stereo verify (each of image)")
-        flog.write("RMSE_Stereo verify (each of image)\n")
+        flog.write("=" * 50)
+        flog.write("\nRMSE_Stereo verify (each of image)\n")
 
         # print(type(obj_points[0]),type(imgpoints_l[0]),type(imgpoints_r[0]))
         # print((obj_points[0]), (imgpoints_l[0]), (imgpoints_r[0]))
@@ -2494,6 +2499,8 @@ class StereoCalibration(object):
         print("=" * 50)
         print('RMSE_Stereo verify ', mean_error)
         flog.write("RMSE_Stereo verify, %.9f\n" % mean_error)
+        flog.write("=" * 50)
+        flog.write("\n")
         flog.close()
         print("=" * 50)
 
