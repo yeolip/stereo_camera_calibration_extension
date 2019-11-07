@@ -111,7 +111,7 @@ enable_debug_pose_estimation_display = 0                   #false: 0, all_enable
 enable_debug_loop_moving_of_rot_and_trans = 1              #false: 0, left: 1, right:2
 
 
-enable_debug_dispatiry_estimation_display = 1              #true: 1, false: 0, debug: 2
+enable_debug_dispatiry_estimation_display = 0              #true: 1, false: 0, debug: 2
 select_png_or_raw       = 0                                #png: 0, raw: 1
 select_point_or_arrow_based_on_reproject_point = 1         #point: 0, arrow: 1
 
@@ -120,6 +120,17 @@ marker_point_y = 10     #pattern's height point
 marker_length = 30      #pattern's gap (unit is mm)
 degreeToRadian = math.pi/180
 radianToDegree = 180/math.pi
+# image_width = 2592
+# image_height = 1944
+#
+# default_camera_param_f = 2836
+# default_camera_param_cx = image_width/2
+# default_camera_param_cy = image_height/2
+# default_camera_param_k1 = -0.20
+# default_camera_param_k2 = 0.19
+# default_camera_param_k3 = 0
+# default_camera_param_k4 = 0
+# default_camera_param_k5 = 0
 image_width = 1280
 image_height = 964
 
@@ -131,10 +142,16 @@ default_camera_param_k2 = -0.2
 default_camera_param_k3 = 0
 default_camera_param_k4 = 0
 default_camera_param_k5 = 0
+enable_intrinsic_plus_focal = 0                                 #plus: 1,   minus: 0
+enable_extrinsic_left_to_right = 0                              # left to right: 1,   right to left: 0
 
-enable_intrinsic_plus_focal = 1                                 #plus: 1,   minus: 0
-enable_extrinsic_left_to_right = 1                              #left to right: 0,   right to left: 1
 
+flag_MASTER = 1                 # exist: 1
+flag_SLAVE  = 10                # exist: 10
+flag_plusFOCAL = 100            # plus: 100
+flag_minusFOCAL = 1000          # minus = 1000
+flag_LEFTtoRIGHT = 10000        # LEFTtoRIGHT: 10000
+flag_RIGHTtoLEFT = 100000       # RIGHTtoLEFT: 100000
 ###############
 
 def check_version_of_opencv():
@@ -151,7 +168,7 @@ def load_point_from_csv(filename):
     for row in csv.reader(fp):
         # print(row)
         # print(row[0], row[1], row[2])
-        if (float(row[3]) < 0 or float(row[4]) < 0 or float(row[5]) < 0 or float(row[6]) < 0):
+        if (float(row[3]) <= 0 or float(row[4]) <= 0 or float(row[5]) <= 0 or float(row[6]) <= 0):
             print('skip', row, float(row[3]), float(row[4]), float(row[5]), float(row[6]))
         else:
             ref_point.append([float(row[0]), float(row[1]), float(row[2])])
@@ -224,29 +241,135 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
     # print(fjs)
     # print(type(fjs))
 
-    # fjs["master"]["lens_params"]['focal_len'] = M1[0][0], M1[1][1]
-    fjs["master"]["lens_params"]['focal_len'] = M1[0][0], M1[1][1]
-    fjs["master"]["lens_params"]['principal_point'] = M1[0][2], M1[1][2]
+    #################################################################
+    #check status of tflag
+    # tflag = 0
+    #
+    # if (fjs['master'].get('camera_pose') is not None):
+    #     # tflag |= (flag_MASTER)
+    #     print("tflag_m", tflag)
+    #     ttrans = fjs['master']['camera_pose']['trans']
+    #     trot = fjs['master']['camera_pose']['rot']
+    #     if (ttrans[0] == 0 and ttrans[1] == 0 and ttrans[2] == 0 and trot[0] == 0 and trot[1] == 0 and trot[2] == 0):
+    #         print("master trans(0,0,0), rot(0,0,0)")
+    #     else:
+    #         tflag += (flag_MASTER | flag_LEFTtoRIGHT)
+    #
+    # if (fjs['slave'].get('camera_pose') is not None):
+    #     # tflag |= (flag_SLAVE)
+    #     print("tflag_s", tflag)
+    #     ttrans = fjs['slave']['camera_pose']['trans']
+    #     trot = fjs['slave']['camera_pose']['rot']
+    #     if (ttrans[0] == 0 and ttrans[1] == 0 and ttrans[2] == 0 and trot[0] == 0 and trot[1] == 0 and trot[2] == 0):
+    #         print("slave trans(0,0,0), rot(0,0,0)")
+    #     else:
+    #         tflag += (flag_SLAVE | flag_RIGHTtoLEFT)
+    #
+    # tfocal = fjs['master']['lens_params'].get('focal_len')
+    # if (tfocal is not None):
+    #     print(tfocal[0], tfocal[1])
+    #     if (tfocal[0] >= 0):
+    #         tflag += flag_plusFOCAL
+    #     else:
+    #         print('test2', tflag, flag_minusFOCAL)
+    #         tflag += (flag_minusFOCAL)
+    # print("tflag", tflag)
+    #################################################################3
+
+    tR = np.eye(3)
+    tT = np.array([0,0,0])
+    tM1 = np.eye(3)
+    tM2 = np.eye(3)
+    tR = R.copy()
+    tT = T.copy()
+    tM1 = M1.copy()
+    tM2 = M2.copy()
+    if (enable_intrinsic_plus_focal == 1):
+        print("flag plus")
+        if(M1[0][0] > 0):
+            print("input +focal") #ok
+            # tR[0][2] = -(R[0][2])
+            # tR[1][2] = -(R[1][2])
+            # tR[2][0] = -(R[2][0])
+            # tR[2][1] = -(R[2][1])
+            #
+            # tT[0] = -T[0]
+            # tT[1] = -T[1]
+            # tT[2] = T[2]
+            #
+            # tM1[0][0] = - (M1[0][0])
+            # tM1[1][1] = - (M1[1][1])
+            # tM2[0][0] = - (M2[0][0])
+            # tM2[1][1] = - (M2[1][1])
+            # print('tR', tR, '\ntT', tT)
+        else:
+            print("input -focal")
+            tR[0][2] = -(R[0][2])
+            tR[1][2] = -(R[1][2])
+            tR[2][0] = -(R[2][0])
+            tR[2][1] = -(R[2][1])
+
+            tT[0] = -T[0]
+            tT[1] = -T[1]
+            tT[2] = T[2]
+
+            tM1[0][0] = - (M1[0][0])
+            tM1[1][1] = - (M1[1][1])
+            tM2[0][0] = - (M2[0][0])
+            tM2[1][1] = - (M2[1][1])
+    else:
+        print("flag minus")
+        if(M1[0][0] > 0):
+            print("input +focal")
+            tR[0][2] = -(R[0][2])
+            tR[1][2] = -(R[1][2])
+            tR[2][0] = -(R[2][0])
+            tR[2][1] = -(R[2][1])
+
+            tT[0] = -T[0]
+            tT[1] = -T[1]
+            tT[2] = T[2]
+
+            tM1[0][0] = - (M1[0][0])
+            tM1[1][1] = - (M1[1][1])
+            tM2[0][0] = - (M2[0][0])
+            tM2[1][1] = - (M2[1][1])
+        else:
+            print("input -focal")  #ok
+
+    if (enable_extrinsic_left_to_right == 1):               # left to right: 0
+        euler = rotationMatrixToEulerAngles(tR) * radianToDegree
+        print('T', T)
+        fjs["master"]["camera_pose"]['trans'] = *tT[0], *tT[1], *tT[2]
+        fjs["master"]["camera_pose"]['rot'] = euler[0], euler[1], euler[2]
+    else:                                                   #right to left: 1
+        t_matrix = np.eye(4)
+        t_matrix[0:3, 0:3] = tR
+        t_matrix[0:3, 3] = tT.T
+        # print('t_matrix',t_matrix)
+        t_matrix_inv = np.linalg.inv(t_matrix)
+        # print('t_matrix_inv', t_matrix_inv)
+        euler = rotationMatrixToEulerAngles(t_matrix_inv[0:3, 0:3]) * radianToDegree
+        fjs["slave"]["camera_pose"]['trans'] = t_matrix_inv[0][3], t_matrix_inv[1][3], t_matrix_inv[2][3]
+        fjs["slave"]["camera_pose"]['rot'] = euler[0], euler[1], euler[2]
+    # print('euler', euler)
+    # return
+
+    fjs["master"]["lens_params"]['focal_len'] = tM1[0][0], tM1[1][1]
+    fjs["master"]["lens_params"]['principal_point'] = tM1[0][2], tM1[1][2]
     fjs["master"]["lens_params"]['k1'] = d1[0][0]
     fjs["master"]["lens_params"]['k2'] = d1[0][1]
     fjs["master"]["lens_params"]['k3'] = d1[0][2]
     fjs["master"]["lens_params"]['k4'] = d1[0][3]
     fjs["master"]["lens_params"]['k5'] = d1[0][4]
-    # fjs["slave"]["lens_params"]['focal_len'] = M2[0][0], M2[1][1]
-    fjs["slave"]["lens_params"]['focal_len'] = M2[0][0], M2[1][1]
-    fjs["slave"]["lens_params"]['principal_point'] = M2[0][2], M2[1][2]
+    fjs["slave"]["lens_params"]['focal_len'] = tM2[0][0], tM2[1][1]
+    fjs["slave"]["lens_params"]['principal_point'] = tM2[0][2], tM2[1][2]
     fjs["slave"]["lens_params"]['k1'] = d2[0][0]
     fjs["slave"]["lens_params"]['k2'] = d2[0][1]
     fjs["slave"]["lens_params"]['k3'] = d2[0][2]
     fjs["slave"]["lens_params"]['k4'] = d2[0][3]
     fjs["slave"]["lens_params"]['k5'] = d2[0][4]
     print("*" * 50)
-
-    # fjs["slave"]["camera_pose"]['trans'] = *T[0], *T[1], *T[2]
-    fjs["master"]["camera_pose"]['trans'] = *T[0], *T[1], *T[2]
-    euler = rotationMatrixToEulerAngles(R) * radianToDegree
-    # print('euler', euler)
-    fjs["master"]["camera_pose"]['rot'] = euler[0], euler[1], euler[2]
 
     fjs["master"]["lens_params"]['calib_res'] = imgsize
     fjs["slave"]["lens_params"]['calib_res'] = imgsize
@@ -257,12 +380,28 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
     fjs["essensial_matrix"] = tE[0][0],tE[0][1],tE[0][2],tE[1][0],tE[1][1],tE[1][2],tE[2][0],tE[2][1],tE[2][2]
     fjs["fundamental_matrix"] = tF[0][0],tF[0][1],tF[0][2],tF[1][0],tF[1][1],tF[1][2],tF[2][0],tF[2][1],tF[2][2]
 
-    wfp = open(path + '/' +filename + '_result_l_to_r' + '.json', 'w', encoding='utf-8')
-    print( path + '/' +filename+ '_result_l_to_r' + '.json')
-    json.dump(fjs, wfp, indent=4)
+    # wfp = open(path + '/' +filename + '_result_l_to_r' + '.json', 'w', encoding='utf-8')
+    # print( path + '/' +filename+ '_result_l_to_r' + '.json')
+    # json.dump(fjs, wfp, indent=4)
+    # wfp.close()
+
+    # enable_intrinsic_plus_focal = 1  # plus: 1,   minus: 0
+    # enable_extrinsic_left_to_right = 1  # left to right: 1,   right to left: 0
+    if (enable_extrinsic_left_to_right == 1):
+        tsubname = '_l_to_r'
+    else:
+        tsubname = '_r_to_l'
+
+    if (enable_intrinsic_plus_focal == 1):
+        tsubname = tsubname + '_plus_f'
+    else:
+        tsubname = tsubname + '_minus_f'
+    wfp2 = open(path + '/' +filename + tsubname + '.json', 'w', encoding='utf-8')
+    json.dump(fjs, wfp2, indent=4)
+    wfp2.close()
 
     fp.close()
-    wfp.close()
+
 
 def modify_value_from_json_from_plus_to_minus_focal(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp, E, F):
     # fpd = pd.read_json(filename)
@@ -1000,6 +1139,11 @@ class StereoCalibration(object):
         print('Input_dist_1', np.round(self.d1, 5))
         print('Input_Intrinsic_mtx_2', *np.round(self.M2, 4), sep='\n')
         print('Input_dist_2', np.round(self.d2, 4))
+        print("")
+        print('R1 [%.8f, %.8f, %.8f]' % (self.r1[0][0], self.r1[0][1], self.r1[0][2]), sep='\n')
+        print('T1 [%.8f, %.8f, %.8f]' % (self.t1[0][0], self.t1[0][1], self.t1[0][2]), sep='\n')
+        print('R2 [%.8f, %.8f, %.8f]' % (self.r2[0][0], self.r2[0][1], self.r2[0][2]), sep='\n')
+        print('T2 [%.8f, %.8f, %.8f]' % (self.t2[0][0], self.t2[0][1], self.t2[0][2]), sep='\n')
         print("=" * 50)
         single_rms_l, _, _  = self.reprojection_error(self.objpoints, self.imgpoints_l, self.r1, self.t1, self.M1, self.d1)
         single_rms_r, _, _  = self.reprojection_error(self.objpoints, self.imgpoints_r, self.r2, self.t2, self.M2, self.d2)
@@ -1755,43 +1899,45 @@ class StereoCalibration(object):
         print("=" * 50)
 
         #plus focal length, Extrinsic_Left to Right
+        # print('R5', R, '\nT5', T)
         modify_value_from_json(self.cal_path, "stereo_config", Ml, dl, Mr, dr, R, T, dims, ret_rp, E, F)
+        # print('R6', R, '\nT6', T)
 
-        #minus focal length, Extrinsic_Right to Left
-        uR = np.zeros((3), np.float64)
-        uR[0] = -rotationMatrixToEulerAngles(R)[0]
-        uR[1] = -rotationMatrixToEulerAngles(R)[1]
-        uR[2] = rotationMatrixToEulerAngles(R)[2]
-
-        uT = np.zeros((3), np.float64)
-        uT[0] = -T[0]
-        uT[1] = -T[1]
-        uT[2] = T[2]
-        # print('uR', uR, '\nuT', uT)
-
-        w_Rt_c = np.eye(4)
-        w_Rt_c[0:3, 0:3] = eulerAnglesToRotationMatrix(uR)
-        w_Rt_c[0:3, 3] = uT
-        # print('w_Rt_c',w_Rt_c)
-        c_Rt_w = np.linalg.inv(w_Rt_c)
-        # print('c_Rt_w', c_Rt_w)
-
-        Ml[0][0] = - np.float64(Ml[0][0])
-        Ml[1][1] = - np.float64(Ml[1][1])
-        Mr[0][0] = - np.float64(Mr[0][0])
-        Mr[1][1] = - np.float64(Mr[1][1])
-
-        modify_value_from_json_from_plus_to_minus_focal(self.cal_path, "stereo_config", Ml, dl, Mr, dr, c_Rt_w[0:3, 0:3], c_Rt_w[0:3, 3], dims, ret_rp, E, F)
-
-        Ml[0][0] = - np.float64(Ml[0][0])
-        Ml[1][1] = - np.float64(Ml[1][1])
-        Mr[0][0] = - np.float64(Mr[0][0])
-        Mr[1][1] = - np.float64(Mr[1][1])
-
-        print("Right->Left");
-        print('R_3x3\n', np.round(c_Rt_w[0:3, 0:3], 8))  # 3x3
-        print('meter_T', c_Rt_w[0:3, 3])
-        print('degree_R', rotationMatrixToEulerAngles(c_Rt_w[0:3, 0:3]) * radianToDegree)
+        # #minus focal length, Extrinsic_Right to Left
+        # uR = np.zeros((3), np.float64)
+        # uR[0] = -rotationMatrixToEulerAngles(R)[0]
+        # uR[1] = -rotationMatrixToEulerAngles(R)[1]
+        # uR[2] = rotationMatrixToEulerAngles(R)[2]
+        #
+        # uT = np.zeros((3), np.float64)
+        # uT[0] = -T[0]
+        # uT[1] = -T[1]
+        # uT[2] = T[2]
+        # # print('uR', uR, '\nuT', uT)
+        #
+        # w_Rt_c = np.eye(4)
+        # w_Rt_c[0:3, 0:3] = eulerAnglesToRotationMatrix(uR)
+        # w_Rt_c[0:3, 3] = uT
+        # # print('w_Rt_c',w_Rt_c)
+        # c_Rt_w = np.linalg.inv(w_Rt_c)
+        # # print('c_Rt_w', c_Rt_w)
+        #
+        # Ml[0][0] = - np.float64(Ml[0][0])
+        # Ml[1][1] = - np.float64(Ml[1][1])
+        # Mr[0][0] = - np.float64(Mr[0][0])
+        # Mr[1][1] = - np.float64(Mr[1][1])
+        #
+        # modify_value_from_json_from_plus_to_minus_focal(self.cal_path, "stereo_config", Ml, dl, Mr, dr, c_Rt_w[0:3, 0:3], c_Rt_w[0:3, 3], dims, ret_rp, E, F)
+        #
+        # Ml[0][0] = - np.float64(Ml[0][0])
+        # Ml[1][1] = - np.float64(Ml[1][1])
+        # Mr[0][0] = - np.float64(Mr[0][0])
+        # Mr[1][1] = - np.float64(Mr[1][1])
+        #
+        # print("Right->Left");
+        # print('R_3x3\n', np.round(c_Rt_w[0:3, 0:3], 8))  # 3x3
+        # print('meter_T', c_Rt_w[0:3, 3])
+        # print('degree_R', rotationMatrixToEulerAngles(c_Rt_w[0:3, 0:3]) * radianToDegree)
         print("=" * 50)
         print('E\n[%.8f, %.8f, %.8f]\n[%.8f, %.8f, %.8f]\n[%.8f, %.8f, %.8f]'%(E[0][0],E[0][1],E[0][2],E[1][0],E[1][1],E[1][2],E[2][0],E[2][1],E[2][2]))
         print('F\n[%.8f, %.8f, %.8f]\n[%.8f, %.8f, %.8f]\n[%.8f, %.8f, %.8f]'%(F[0][0],F[0][1],F[0][2],F[1][0],F[1][1],F[1][2],F[2][0],F[2][1],F[2][2]))
@@ -2343,6 +2489,12 @@ class StereoCalibration(object):
             temp_tvecs[0] = temp_tvecs[0]
             temp_tvecs[1] = temp_tvecs[1]
             temp_tvecs[2] = temp_tvecs[2]
+
+            # tR = cv2.Rodrigues(temp_rvecs)[0]
+            # euler = rotationMatrixToEulerAngles(tR) * radianToDegree
+            # print('R1 [%.8f, %.8f, %.8f]' % (euler[0], euler[1], euler[2]), sep='\n')
+            # print('T1 [%.8f, %.8f, %.8f]' % (temp_tvecs[0], temp_tvecs[1], temp_tvecs[2]), sep='\n')
+
             reprojected_points, _ = cv2.projectPoints(obj_points[i], temp_rvecs, temp_tvecs, camera_matrix, dist_coeffs)
             reprojected_points = reprojected_points.reshape(-1, 2)
             temp_points = img_points_reshape[i].reshape(-1, 2)
