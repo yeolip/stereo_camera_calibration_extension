@@ -20,9 +20,8 @@
 # 4. distinguish minus focal on intrinsic   - ok
 # 4. distinguish left to right and right to left on extrinsic - ok
 # 5. disparity distance from point          - ok
-# 6. calc stereo rms            
-# 6. auto parameter such as one, repeat using point, circle, square
-
+# 6. calc stereo rms
+# 7. auto parameter such as one, repeat using point, circle, square
 # 8. retification json data with Q
 
 
@@ -568,7 +567,7 @@ def save_coordinate_using_rectify(path, objpoints, imgpoints_l, imgpoints_r, cou
     output = pd.DataFrame(table, columns=col)
     output.to_csv(path + '/' + "totalRectify_p_from_img.csv", index=False, header=False)
 
-def save_coordinate_using_rectify_with_distance(path, objpoints, imgpoints_l, imgpoints_r, baseline, focal, count_ok_dual):
+def save_coordinate_using_rectify_with_distance(path, objpoints, imgpoints_l, imgpoints_r, baseline, focal):
     table = []
     refpointx = []
     refpointy = []
@@ -597,10 +596,10 @@ def save_coordinate_using_rectify_with_distance(path, objpoints, imgpoints_l, im
         distance = (focal * baseline) / (lpointx[i] - rpointx[i])
         table.append([refpointx[i], refpointy[i], refpointz[i], lpointx[i], lpointy[i], rpointx[i], rpointy[i], distance])
 
-    group_of_value = int(len(refpointx) / count_ok_dual)
+    group_of_value = int(len(refpointx) / len(objpoints))
     col = ['refpX', 'refpY', 'refpZ', 'M_imgX', 'M_imgY', 'S_imgX', 'S_imgY', 'Distance']
 
-    for j in range(0, count_ok_dual, 1):
+    for j in range(0, len(objpoints), 1):
         temp = []
         for i in range(0, group_of_value, 1):
             distance = (focal * baseline) / (lpointx[i + group_of_value * j] - rpointx[i + group_of_value * j])
@@ -1067,7 +1066,7 @@ class StereoCalibration(object):
         print("//////read_points_with_mono_stereo/////////")
         flags = 0
         # flags |= cv2.CALIB_FIX_INTRINSIC
-        #flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+        # flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
         flags |= cv2.CALIB_USE_INTRINSIC_GUESS
         #flags |= cv2.CALIB_FIX_FOCAL_LENGTH
         flags |= cv2.CALIB_FIX_ASPECT_RATIO
@@ -1169,7 +1168,7 @@ class StereoCalibration(object):
 
         self.stereo_flags = 0
         # self.stereo_flags |= cv2.CALIB_FIX_INTRINSIC
-        #self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+        # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
         self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
         # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
         self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
@@ -1195,7 +1194,7 @@ class StereoCalibration(object):
         if (enable_debug_dispatiry_estimation_display == 1 or enable_debug_dispatiry_estimation_display == 2):
             self.mapL1, self.mapL2, self.mapR1, self.mapR2, _, _, _, _ = self.stereo_rectify_with_points(img_shape,
                                                                             self.Ml,self.dl, self.Mr, self.dr, self.R, self.T,
-                                                                            self.imgpoints_l, self.imgpoints_r)
+                                                                            self.objpoints, self.imgpoints_l, self.imgpoints_r)
 
         stero_rms, re_left, re_right = self.calc_rms_stereo2(self.objpoints, self.imgpoints_l, self.imgpoints_r, self.Ml, self.dl, self.Mr, self.dr, self.R, self.T)
         # print(type(self.imgpoints_l),type(re_left))
@@ -1302,7 +1301,7 @@ class StereoCalibration(object):
         if (enable_debug_dispatiry_estimation_display == 1 or enable_debug_dispatiry_estimation_display == 2):
             self.mapL1, self.mapL2, self.mapR1, self.mapR2, _, _, _, _ = self.stereo_rectify_with_points(img_shape,
                                                                             self.Ml,self.dl, self.Mr, self.dr, self.R, self.T,
-                                                                            self.imgpoints_l, self.imgpoints_r)
+                                                                            self.objpoints, self.imgpoints_l, self.imgpoints_r)
 
         stero_rms, re_left, re_right = self.calc_rms_stereo2(self.objpoints, self.imgpoints_l, self.imgpoints_r,
                                                              self.Ml, self.dl, self.Mr, self.dr, self.R, self.T)
@@ -2104,7 +2103,7 @@ class StereoCalibration(object):
 
         t_focal = PR[0][0]
         t_baseline = PR[0][3] / t_focal
-        save_coordinate_using_rectify_with_distance(self.cal_path, t_refpoints, t_lpoint, t_rpoint, t_baseline, t_focal, t_num)
+        save_coordinate_using_rectify_with_distance(self.cal_path, t_refpoints, t_lpoint, t_rpoint, t_baseline, t_focal)
 
 
         # original image
@@ -2160,7 +2159,129 @@ class StereoCalibration(object):
         self.depth_using_stereo_param(undistorted_rectifiedL,undistorted_rectifiedR)
         return mapL1, mapL2, mapR1, mapR2, RL, PL, RR, PR
 
-    def stereo_rectify_with_points(self, img_shape, camera_matrix_l, dist_coeffs_l, camera_matrix_r, dist_coeffs_r, R, T, timgpoints_l,timgpoints_r):
+    def stereo_rectify_with_points(self, img_shape, camera_matrix_l, dist_coeffs_l, camera_matrix_r, dist_coeffs_r, R, T, tobjrefpoint, timgpoints_l,timgpoints_r):
+        print("-> process of stereo_rectify_with_points")
+
+        # STAGE 4: rectification of images (make scan lines align left <-> right
+        # N.B.  "alpha=0 means that the rectified images are zoomed and shifted so that
+        # only valid pixels are visible (no black areas after rectification). alpha=1 means
+        # that the rectified image is decimated and shifted so that all the pixels from the original images
+        # from the cameras are retained in the rectified images (no source image pixels are lost)." - ?
+        RL, RR, PL, PR, Q, validPixROI1, validPixROI2 = cv2.stereoRectify(camera_matrix_l, dist_coeffs_l,
+                                                                          camera_matrix_r, dist_coeffs_r,
+                                                                          img_shape, R, T, alpha=-1, flags=cv2.CALIB_ZERO_DISPARITY);
+
+        # compute the pixel mappings to the rectified versions of the images
+        print("*" * 50)
+        print('Intrinsic_Left', *np.round(camera_matrix_l, 5), sep='\n\t')
+        print('-> Projection Left', *np.round(PL, 5), sep='\n\t')
+        print('  Left Rot rectification \n\t', *np.round(RL[0], 8), '\n\t', *np.round(RL[1], 8), '\n\t',
+              *np.round(RL[2], 8))
+        print('\nIntrinsic_Right', *np.round(camera_matrix_r, 5), sep='\n\t')
+        print('-> Projection Right', *np.round(PR, 5), sep='\n\t')
+        print('  Right Rot rectification \n\t', *np.round(RR[0], 8), '\n\t', *np.round(RR[1], 8), '\n\t',
+              *np.round(RR[2], 8))
+
+        mapL1, mapL2 = cv2.initUndistortRectifyMap(camera_matrix_l, dist_coeffs_l, RL, PL, img_shape, cv2.CV_32FC1);
+        mapR1, mapR2 = cv2.initUndistortRectifyMap(camera_matrix_r, dist_coeffs_r, RR, PR, img_shape, cv2.CV_32FC1);
+
+        # display data
+        print('\nLeft  3x4 proj in new (rectified) coordinate ', *PL, sep='\n')
+        print('\nRight 3x4 proj in new (rectified) coordinate ', *PR, sep='\n')
+        print('\nQ', *Q, sep='\n\t')
+        # flog = open(self.cal_path + '/log.txt', 'a')
+        # flog.write('\nLeft  3x4 proj in new (rectified) coordinate ', *PL, sep='\n')
+        # flog.write('\nRight 3x4 proj in new (rectified) coordinate ', *PR, sep='\n')
+        # flog.write('\nQ', *Q, sep='\n\t')
+        # flog.close()
+
+        print('validPixROI1', *validPixROI1)
+        print('validPixROI2', *validPixROI2)
+
+        self.RL = RL
+        self.RR = RR
+        self.PL = PL
+        self.PR = PR
+        self.Q = Q
+
+        # extract point from chart and save
+        t_list_left = []
+        t_list_right = []
+
+        #todo - undistort -> coordinate
+        tleft = np.copy(timgpoints_l)
+        tright = np.copy(timgpoints_r)
+        for i in range(len(tobjrefpoint)):
+            # print(i+1, 'st')
+            temp_lpoints = tleft[i].reshape(-1, 1, 2)
+            temp_rpoints = tright[i].reshape(-1, 1, 2)
+            un_dst_l = cv2.undistortPoints(temp_lpoints, camera_matrix_l, dist_coeffs_l, R=RL, P=PL)
+            un_dst_r = cv2.undistortPoints(temp_rpoints, camera_matrix_r, dist_coeffs_r, R=RR, P=PR)
+
+            t_list_left.append(un_dst_l)
+            t_list_right.append(un_dst_r)
+            # print("un_dst_l\n",un_dst_l, un_dst_l.shape)
+            # print("un_dst_r\n", un_dst_r, un_dst_r.shape)
+
+            # calc triangulatePoint
+            # un_dst_l = [un_dst_l]
+            # un_dst_r = [un_dst_r]
+            # tret = cv2.triangulatePoints(PL, PR, np.array(un_dst_l).reshape(-1, 1, 2), np.array(un_dst_r).reshape(-1, 1, 2))
+            # print('tret', tret)
+            # print('tret/tret[3]', tret/tret[3])
+
+            # self.calc_distance_using_stereo_point(un_dst_l, un_dst_r, PR)
+
+        t_focal = PR[0][0]
+        t_baseline = PR[0][3] / t_focal
+        save_coordinate_using_rectify_with_distance(self.cal_path, tobjrefpoint, t_list_left, t_list_right, t_baseline, t_focal)
+
+        # another method for rectification from point to modified point
+        t_list_left2 = []
+        t_list_right2 = []
+
+        tmat = PL[:, 0:3]
+        # tmat = tmat.reshape(3, 3)
+        tmat_d = np.zeros((1, 5), np.float32)
+        tmat2 = PR[:, 0:3]
+        # print(tmat)
+        # print(tmat2)
+
+        for i in range(len(tobjrefpoint)):
+            _, rvec_l, tvec_l, _ = cv2.solvePnPRansac(tobjrefpoint[i], t_list_left[i], camera_matrix_l, dist_coeffs_l)
+            _, rvec_r, tvec_r, _ = cv2.solvePnPRansac(tobjrefpoint[i], t_list_right[i], camera_matrix_r, dist_coeffs_r)
+            t2 = np.array([[0],[0],[0]])
+            tR, tT, _ , _ ,_ , _ , _ , _, _, _= cv2.composeRT( rvec_l, tvec_l, cv2.Rodrigues(RL)[0], t2)
+            tR2, tT2, _, _, _, _, _, _, _, _ = cv2.composeRT(rvec_r, tvec_r, cv2.Rodrigues(RR)[0], t2)
+
+            rp_l, _ = cv2.projectPoints(tobjrefpoint[i], tR, tT, tmat, tmat_d)
+            rp_r, _ = cv2.projectPoints(tobjrefpoint[i], tR2, tT2, tmat2, tmat_d)
+            # print('rp_l', rp_l)
+            # print('rp_r', rp_r)
+            t_list_left2.append(rp_l)
+            t_list_right2.append(rp_r)
+            rp_l = [rp_l]
+            rp_r = [rp_r]
+            # self.calc_distance_using_stereo_point(rp_l, rp_r, PR)
+
+            # print("calc_rms_stereo3\n\n")
+            # print(PR[:, 3], np.array(rp_l).shape)
+            # trefer = np.copy(self.objpoints[i]).reshape(-1,1,3)
+            # trefer = np.array([trefer])
+            # print(trefer.shape)
+            # print(T)
+        t_T = np.copy(PR[:, 3])
+        t_T[0] = t_T[0] / PR[0,0]
+        print(t_T)
+
+        stero_rms, re_left, re_right = self.calc_rms_stereo3(tobjrefpoint, t_list_left2, t_list_right2,
+                                                             tmat, tmat_d, tmat2, tmat_d, np.eye(3), t_T)
+        # stero_rms, re_left, re_right = self.calc_rms_stereo3(tobjrefpoint, t_list_left, t_list_right,
+        #                                                      tmat, tmat_d, tmat2, tmat_d, np.eye(3), t_T)
+        # return
+        return mapL1, mapL2, mapR1, mapR2, RL, PL, RR, PR
+
+    def stereo_rectify_with_points_backup(self, img_shape, camera_matrix_l, dist_coeffs_l, camera_matrix_r, dist_coeffs_r, R, T, timgpoints_l,timgpoints_r):
         print("-> process of stereo_rectify_with_points")
 
         # img_l = np.zeros((image_height,image_width, 3), np.uint8)
@@ -2249,37 +2370,45 @@ class StereoCalibration(object):
         # t_num = 1
         # t_focal = PR[0][0]
         # t_baseline = PR[0][3] / t_focal
-        # save_coordinate_using_rectify_with_distance(self.cal_path, temp_refer, un_dst_l, un_dst_r, t_baseline, t_focal, t_num)
+        # save_coordinate_using_rectify_with_distance(self.cal_path, temp_refer, un_dst_l, un_dst_r, t_baseline, t_focal)
 
         # another method for rectification from point to modified point
-        # tmat = PL[:, 0:3]
-        # tmat = tmat.reshape(3,3)
-        # tmat_d = np.zeros((1, 5), np.float32)
-        # tmat2 = PR[:, 0:3]
-        # print(tmat)
-        # print(tmat2)
-        # _, rvec_l, tvec_l, _ = cv2.solvePnPRansac(self.objpoints[0], timgpoints_l[0], camera_matrix_l, dist_coeffs_l)
-        # _, rvec_r, tvec_r, _ = cv2.solvePnPRansac(self.objpoints[0], timgpoints_r[0], camera_matrix_r, dist_coeffs_r)
-        # t2 = np.array([[0],[0],[0]])
-        # tR, tT, _ , _ ,_ , _ , _ , _, _, _= cv2.composeRT( rvec_l, tvec_l, cv2.Rodrigues(RL)[0], t2)
-        # tR2, tT2, _, _, _, _, _, _, _, _ = cv2.composeRT(rvec_r, tvec_r, cv2.Rodrigues(RR)[0], t2)
-        #
-        # # rp_l, _ = cv2.projectPoints(self.objpoints[0], rvec_l, tvec_l, tmat, dist_coeffs_l)
-        # rp_l, _ = cv2.projectPoints(tobjpoints[0], tR, tT, tmat, tmat_d)
-        # rp_r, _ = cv2.projectPoints(tobjpoints[0], tR2, tT2, tmat2, tmat_d)
+        tmat = PL[:, 0:3]
+        tmat = tmat.reshape(3,3)
+        tmat_d = np.zeros((1, 5), np.float32)
+        tmat2 = PR[:, 0:3]
+        print(tmat)
+        print(tmat2)
+        _, rvec_l, tvec_l, _ = cv2.solvePnPRansac(self.objpoints[0], timgpoints_l[0], camera_matrix_l, dist_coeffs_l)
+        _, rvec_r, tvec_r, _ = cv2.solvePnPRansac(self.objpoints[0], timgpoints_r[0], camera_matrix_r, dist_coeffs_r)
+        t2 = np.array([[0],[0],[0]])
+        tR, tT, _ , _ ,_ , _ , _ , _, _, _= cv2.composeRT( rvec_l, tvec_l, cv2.Rodrigues(RL)[0], t2)
+        tR2, tT2, _, _, _, _, _, _, _, _ = cv2.composeRT(rvec_r, tvec_r, cv2.Rodrigues(RR)[0], t2)
+
+        # rp_l, _ = cv2.projectPoints(self.objpoints[0], rvec_l, tvec_l, tmat, dist_coeffs_l)
+        rp_l, _ = cv2.projectPoints(self.objpoints[0], tR, tT, tmat, tmat_d)
+        rp_r, _ = cv2.projectPoints(self.objpoints[0], tR2, tT2, tmat2, tmat_d)
         # print('rp_l', rp_l)
         # print('rp_r', rp_r)
         # print(rp_l.shape)
-        # rp_l = [rp_l]
-        # rp_r = [rp_r]
+        rp_l = [rp_l]
+        rp_r = [rp_r]
         # self.calc_distance_using_stereo_point(rp_l, rp_r, PR)
 
-        self.calc_distance_using_stereo_point(un_dst_l, un_dst_r, PR)
+        # self.calc_distance_using_stereo_point(un_dst_l, un_dst_r, PR)
 
-        # print("calc_rms_stereo3\n\n")
-        # stero_rms, re_left, re_right = self.calc_rms_stereo3(self.objpoints, self.imgpoints_l, self.imgpoints_r,
-        #                                                      self.Ml, self.dl, self.Mr, self.dr, self.R, self.T)
-
+        print("calc_rms_stereo3\n\n")
+        print(PR[:, 3], np.array(rp_l).shape)
+        trefer = np.copy(self.objpoints[0]).reshape(-1,1,3)
+        trefer = np.array([trefer])
+        print(trefer.shape)
+        print(T)
+        tT = np.copy(PR[:, 3])
+        tT[0] = tT[0] / PR[0,0]
+        print(tT)
+        stero_rms, re_left, re_right = self.calc_rms_stereo3(trefer, np.array(rp_l), np.array(rp_r),
+                                                             tmat, tmat_d, tmat2, tmat_d, np.eye(3), tT)
+        # return
         return mapL1, mapL2, mapR1, mapR2, RL, PL, RR, PR
 
     #calculate distance
@@ -2313,8 +2442,7 @@ class StereoCalibration(object):
         depth[valid_pixels] = (fx * baseline) / (units * disparity[valid_pixels])
 
         # visualize depth data
-        # plt.imshow(depth)
-        depth = cv2.equalizeHist(depth)
+        # plt.imshowcalc_rms_stereo2pth)
         colorized_depth = np.zeros((left.shape[0], left.shape[1], 3), dtype="uint8")
         temp = cv2.applyColorMap(depth, cv2.COLORMAP_JET)
         colorized_depth[valid_pixels] = temp[valid_pixels]
@@ -2742,36 +2870,54 @@ class StereoCalibration(object):
         return mean_error, p_reproj_left, p_reproj_right
 
     def calc_rms_stereo3(self, obj_points, imgpoints_l, imgpoints_r, A1, D1, A2, D2, R, T):
+        print("calc_rms_stereo3")
         tot_error = 0
         total_points = 0
         p_reproj_left = []
         p_reproj_right = []
 
+        # another method for rectification from point to modified point
+        # tmat = PL[:, 0:3]
+        # tmat = tmat.reshape(3,3)
+        # tmat_d = np.zeros((1, 5), np.float32)
+        # tmat2 = PR[:, 0:3]
+        # print(tmat)
+        # print(tmat2)
+        # _, rvec_l, tvec_l, _ = cv2.solvePnPRansac(self.objpoints[0], timgpoints_l[0], camera_matrix_l, dist_coeffs_l)
+        # _, rvec_r, tvec_r, _ = cv2.solvePnPRansac(self.objpoints[0], timgpoints_r[0], camera_matrix_r, dist_coeffs_r)
+        # t2 = np.array([[0],[0],[0]])
+        # tR, tT, _ , _ ,_ , _ , _ , _, _, _= cv2.composeRT( rvec_l, tvec_l, cv2.Rodrigues(RL)[0], t2)
+        # tR2, tT2, _, _, _, _, _, _, _, _ = cv2.composeRT(rvec_r, tvec_r, cv2.Rodrigues(RR)[0], t2)
+        #
+        # # rp_l, _ = cv2.projectPoints(self.objpoints[0], rvec_l, tvec_l, tmat, dist_coeffs_l)
+        # rp_l, _ = cv2.projectPoints(tobjpoints[0], tR, tT, tmat, tmat_d)
+        # rp_r, _ = cv2.projectPoints(tobjpoints[0], tR2, tT2, tmat2, tmat_d)
+        # print('rp_l', rp_l)
+        # print('rp_r', rp_r)
+        # print(rp_l.shape)
+        # rp_l = [rp_l]
+        # rp_r = [rp_r]
+        # self.calc_distance_using_stereo_point(rp_l, rp_r, PR)
+        print('len',len(obj_points))
         for i in range(len(obj_points)):
             t_imgpoints_l = imgpoints_l[i].reshape(-1, 1, 2)
             t_imgpoints_r = imgpoints_r[i].reshape(-1, 1, 2)
 
             # print('test', t_obj_points, t_imgpoints_l, t_imgpoints_r)
             # calculate world <-> cam1 transformation
-            print(A1)
+            # print(A1)
             # cv2.FindExtrinsicCameraParams2(obj_points[i], imgpoints_l[i], A1, D1, temp_rvecs, temp_tvecs)
 
             # _, rvec_l, tvec_l, _ = cv2.solvePnPRansac(obj_points[i], t_imgpoints_l, A1, D1 )
             # _, t_rvec_l, t_tvec_l = cv2.solvePnP(obj_points[i], imgpoints_l[i], A1, D1, useExtrinsicGuess = True, flags=cv2.SOLVEPNP_ITERATIVE )
-
+            # print(obj_points[i].shape, t_imgpoints_l.shape)
             _, rvec_l, tvec_l = cv2.solvePnP(obj_points[i], t_imgpoints_l, A1, D1, flags=cv2.SOLVEPNP_ITERATIVE)
             # rvec_test = rvec_l.copy()
             # rvec_test[0] = -rvec_test[0]
             # rvec_test[1] = -rvec_test[1]
             # rvec_test[2] = -rvec_test[2]
-            print('rvec_l', 'tvec_l',rvec_l, tvec_l,'r33\n',cv2.Rodrigues(rvec_l)[0])
+            # print('rvec_l', 'tvec_l',rvec_l, tvec_l,'r33\n',cv2.Rodrigues(rvec_l)[0])
             # print(rvec_l.shape, tvec_l.shape)
-            tvec_l[0] = tvec_l[0]
-            tvec_l[1] = tvec_l[1]
-            tvec_l[2] = tvec_l[2]
-            rvec_l[0] = rvec_l[0]
-            rvec_l[1] = rvec_l[1]
-            rvec_l[2] = rvec_l[2]
             #print('rvec_l', 'tvec_l',rvec_l, tvec_l)
             # print('*'*50)
             # _, temp_rvecs, temp_tvecs = cv2.solvePnP(obj_points[i], imgpoints_l[i], A1, D1, flags=cv2.SOLVEPNP_ITERATIVE  )
@@ -2784,6 +2930,7 @@ class StereoCalibration(object):
             total_points += len(obj_points[i])
 
             # calculate world <-> cam2 transformation
+            # print('R',R, 'T',T)
             rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
             #print('rvec_r', 'tvec_r', rvec_r, tvec_r)
             #, rvec_r_mono, tvec_r_mono = cv2.solvePnP(obj_points[i], t_imgpoints_r, A2, D2, flags=cv2.SOLVEPNP_ITERATIVE)
@@ -2800,7 +2947,7 @@ class StereoCalibration(object):
             temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(np.square(np.float64(rp_r - t_imgpoints_r)))
             temp_points = 2 * len(obj_points[i])
             temp_mean_error = np.sqrt(temp_error / temp_points)
-            print(temp_mean_error)
+            print(str(i) + 'st %.8f' % temp_mean_error)
 
 
             rp_l = rp_l.reshape(-1, 2)
@@ -2811,7 +2958,7 @@ class StereoCalibration(object):
         mean_error = np.sqrt(tot_error / total_points)
 
         print("=" * 50)
-        print('stero_rms_manual2: ', mean_error)
+        print('RMSE_Stereo verify ', mean_error)
         print("=" * 50)
 
         return mean_error, p_reproj_left, p_reproj_right
