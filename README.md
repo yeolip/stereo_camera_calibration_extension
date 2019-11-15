@@ -5,8 +5,8 @@ Stereo camera calibration
 this section is doing stereo camera calibration using opencv python.
 this tool have some functions below about stereo camera
 
-[enter link description here](./desc/StereoCalibrate_phase_one.png)
 ![enter image description here](./desc/StereoCalibrate_phase_one.png)
+![enter image description here](./desc/StereoCalibrate_phase_two_three.png)
 
  1. **stereo camera calibration using stereo images**
     - **support circle grid marker**
@@ -66,3 +66,12 @@ ex3) camera_calibrate_input_rms.py ./input_lgit/ ./input_lgit/stereo_config_33_2
 # reference
 
 [https://github.com/bvnayak/stereo_calibration](https://github.com/bvnayak/stereo_calibration)
+
+
+![enter image description here](./desc/detected_point.png)
+![enter image description here](./desc/detected_point_square.png)
+![enter image description here](./desc/distance.png)
+![enter image description here](./desc/pose_estimate.png)
+![enter image description here](./desc/reprojection_and_image_point.png)
+![enter image description here](./desc/RT_XYZaxis.png)
+![enter image description here](./desc/correcspond_epilines.png)
