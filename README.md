@@ -5,6 +5,9 @@ Stereo camera calibration
 this section is doing stereo camera calibration using opencv python.
 this tool have some functions below about stereo camera
 
+[enter link description here](./desc/StereoCalibrate_phase_one.png)
+![enter image description here](./desc/StereoCalibrate_phase_one.png)
+
  1. **stereo camera calibration using stereo images**
     - **support circle grid marker**
     - **support square grid marker**
