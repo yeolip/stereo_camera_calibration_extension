@@ -2143,8 +2143,8 @@ class StereoCalibration(object):
 
             t_list_left.append(un_dst_l)
             t_list_right.append(un_dst_r)
-            # print("un_dst_l\n",un_dst_l, un_dst_l.shape)
-            # print("un_dst_r\n", un_dst_r, un_dst_r.shape)
+            # print("\nun_dst_l\n",un_dst_l, un_dst_l.shape)
+            # print("\nun_dst_r\n", un_dst_r, un_dst_r.shape)
 
             # calc triangulatePoint
             # un_dst_l = [un_dst_l]
@@ -2162,27 +2162,38 @@ class StereoCalibration(object):
         # another method for rectification from point to modified point
         t_list_left2 = []
         t_list_right2 = []
+        t_list_right2_prime = []    #stereo left->right calc
+
+        t_T = np.copy(PR[:, 3])
+        t_T[0] = t_T[0] / PR[0,0]
+        print(t_T)
 
         tmat = PL[:, 0:3]
-        # tmat = tmat.reshape(3, 3)
-        tmat_d = np.zeros((1, 5), np.float32)
         tmat2 = PR[:, 0:3]
+        tmat_d = np.zeros((1, 5), np.float32)
         # print(tmat)
         # print(tmat2)
 
         for i in range(len(tobjrefpoint)):
-            _, rvec_l, tvec_l, _ = cv2.solvePnPRansac(tobjrefpoint[i], t_list_left[i], camera_matrix_l, dist_coeffs_l)
-            _, rvec_r, tvec_r, _ = cv2.solvePnPRansac(tobjrefpoint[i], t_list_right[i], camera_matrix_r, dist_coeffs_r)
+            # _, rvec_l, tvec_l, _ = cv2.solvePnPRansac(tobjrefpoint[i], t_list_left[i], camera_matrix_l, dist_coeffs_l)
+            # _, rvec_r, tvec_r, _ = cv2.solvePnPRansac(tobjrefpoint[i], t_list_right[i], camera_matrix_r, dist_coeffs_r)
+            _, rvec_l, tvec_l, _ = cv2.solvePnPRansac(tobjrefpoint[i], t_list_left[i], tmat, tmat_d)
+            _, rvec_r, tvec_r, _ = cv2.solvePnPRansac(tobjrefpoint[i], t_list_right[i], tmat, tmat_d)
+            print(rvec_l, rvec_r, tvec_l, tvec_r)
             t2 = np.array([[0],[0],[0]])
-            tR, tT, _ , _ ,_ , _ , _ , _, _, _= cv2.composeRT( rvec_l, tvec_l, cv2.Rodrigues(RL)[0], t2)
-            tR2, tT2, _, _, _, _, _, _, _, _ = cv2.composeRT(rvec_r, tvec_r, cv2.Rodrigues(RR)[0], t2)
+            # tR, tT, _ , _ ,_ , _ , _ , _, _, _= cv2.composeRT( rvec_l, tvec_l, cv2.Rodrigues(RL)[0], t2)
+            # tR2, tT2, _, _, _, _, _, _, _, _ = cv2.composeRT(rvec_r, tvec_r, cv2.Rodrigues(RR)[0], t2)
+            tR2, tT2, _ , _ ,_ , _ , _ , _, _, _= cv2.composeRT( rvec_l, tvec_l, cv2.Rodrigues(np.eye(3))[0], t_T)
 
-            rp_l, _ = cv2.projectPoints(tobjrefpoint[i], tR, tT, tmat, tmat_d)
-            rp_r, _ = cv2.projectPoints(tobjrefpoint[i], tR2, tT2, tmat2, tmat_d)
-            # print('rp_l', rp_l)
-            # print('rp_r', rp_r)
+            rp_l, _ = cv2.projectPoints(tobjrefpoint[i], rvec_l, tvec_l, tmat, tmat_d)
+            rp_r, _ = cv2.projectPoints(tobjrefpoint[i], rvec_r, tvec_r, tmat2, tmat_d)
+            rp_r_prime, _ = cv2.projectPoints(tobjrefpoint[i], tR2, tT2, tmat2, tmat_d)
+            # print('\nrp_l\n', rp_l)
+            # print('\nrp_r\n', rp_r)
+            # print('\nrp_r_prime\n', rp_r_prime)
             t_list_left2.append(rp_l)
             t_list_right2.append(rp_r)
+            t_list_right2_prime.append(rp_r_prime)
             rp_l = [rp_l]
             rp_r = [rp_r]
             # self.calc_distance_using_stereo_point(rp_l, rp_r, PR)
@@ -2193,9 +2204,6 @@ class StereoCalibration(object):
             # trefer = np.array([trefer])
             # print(trefer.shape)
             # print(T)
-        t_T = np.copy(PR[:, 3])
-        t_T[0] = t_T[0] / PR[0,0]
-        print(t_T)
 
         # stero_rms, re_left, re_right = self.calc_rms_stereo3(tobjrefpoint, t_list_left2, t_list_right2,
         #                                                      tmat, tmat_d, tmat2, tmat_d, np.eye(3), t_T)
