@@ -52,8 +52,6 @@ flag_LEFTtoRIGHT = 10000        # LEFTtoRIGHT: 10000
 flag_RIGHTtoLEFT = 100000       # RIGHTtoLEFT: 100000
 
 def load_json_to_table(filename, filenum):
-  fpd = pd.read_json(filename)
-
   data = json.load(open(filename))
   # dictdata = data['master']
   #
@@ -78,7 +76,7 @@ def load_json_to_table(filename, filenum):
 
   if (data['master'].get('camera_pose') is not None):
       # tflag |= (flag_MASTER)
-      print("tflag_m", tflag)
+      # print("tflag_m", tflag)
       ttrans = data['master']['camera_pose']['trans']
       trot = data['master']['camera_pose']['rot']
       if(ttrans[0]==0 and ttrans[1]==0 and ttrans[2]==0 and trot[0]==0 and trot[1]==0 and trot[2]==0):
@@ -88,7 +86,7 @@ def load_json_to_table(filename, filenum):
 
   if (data['slave'].get('camera_pose') is not None):
       # tflag |= (flag_SLAVE)
-      print("tflag_s", tflag)
+      # print("tflag_s", tflag)
       ttrans = data['slave']['camera_pose']['trans']
       trot = data['slave']['camera_pose']['rot']
       if(ttrans[0]==0 and ttrans[1]==0 and ttrans[2]==0 and trot[0]==0 and trot[1]==0 and trot[2]==0):
@@ -105,16 +103,14 @@ def load_json_to_table(filename, filenum):
           print('test2', tflag, flag_minusFOCAL)
           tflag += (flag_minusFOCAL)
   print("tflag", tflag)
-
-  df = pd.DataFrame(fpd.master.lens_params)
-  df2 = pd.DataFrame(fpd.slave.lens_params)
-
+  df = pd.DataFrame(data['master']['lens_params'])
+  df2 = pd.DataFrame(data['slave']['lens_params'])
   if(tflag & flag_MASTER == 1):
       print("master")
-      df3 = pd.DataFrame(fpd.master.camera_pose)
+      df3 = pd.DataFrame(data['master']['camera_pose'])
   else:
       print("slave")
-      df3 = pd.DataFrame(fpd.slave.camera_pose)
+      df3 = pd.DataFrame(data['slave']['camera_pose'])
 
   # t2trans = fpd['master'].get['camera_pose']
   # t2rot = fpd.master.camera_pose.get('rot')
@@ -160,31 +156,40 @@ def load_json_to_table(filename, filenum):
   # else:
   #     df3 = pd.DataFrame(fpd.master.camera_pose)
 
-  if fpd.get('reprojection_error') is None:
+  if data.get('reprojection_error') is None:
       print("reprojection none")
   else:
-      df4 = pd.DataFrame(fpd.reprojection_error)
-
+      # print(data['reprojection_error'].keys())
+      # print(data['reprojection_error'].values())
+      # df4 = pd.DataFrame(list(data['reprojection_error']))
+      # df4 = pd.DataFrame(list(data['reprojection_error'].key()),list(data['reprojection_error'].value()))
+      dictdata = data['reprojection_error']
+      # print(data.get('reprojection_error'))
+      # print(data.values())
+      # df4 = pd.DataFrame({'reprojection_error': data['reprojection_error']} )
+      # df4 = pd.Series(data['reprojection_error'])
+      # print(df4)
   indata = pd.get_dummies(df)
   # print(indata)
   indata2 = pd.get_dummies(df2)
   # print(indata2)
   indata3 = pd.get_dummies(df3)
-  print(indata3)
-  if fpd.get('reprojection_error') is None:
+  # print(indata3)
+  if data.get('reprojection_error') is None:
       print("reprojection none")
-  else:
-      indata4 = pd.get_dummies(df4)
+
 
   wantedList = [filename]
   wantedList = parsing_lens_params(indata, wantedList)
   wantedList = parsing_lens_params(indata2, wantedList)
   wantedList = parsing_camera_pose(indata3, wantedList)
-  # print(wantedList)
-  if fpd.get('reprojection_error') is None:
+  print(wantedList)
+  if data.get('reprojection_error') is None:
       wantedList.append(0)
   else:
-      wantedList.append(indata4['reprojection_error'][0])
+      wantedList.append(data['reprojection_error'])
+      print('Rp',data['reprojection_error'])
+      print(wantedList)
 
   # col = ['Path' , 'M_imageX','M_imageY','M_focalX','M_focalY','M_k1','M_k2','M_principalX','M_principalY',
   # 'S_imageX','S_imageY','S_focalX','S_focalY','S_k1','S_k2','S_principalX','S_principalY',

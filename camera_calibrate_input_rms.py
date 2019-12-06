@@ -124,17 +124,7 @@ marker_point_y = 10     #pattern's height point
 marker_length = 30      #pattern's gap (unit is mm)
 degreeToRadian = math.pi/180
 radianToDegree = 180/math.pi
-# image_width = 2592
-# image_height = 1944
-#
-# default_camera_param_f = 2836
-# default_camera_param_cx = image_width/2
-# default_camera_param_cy = image_height/2
-# default_camera_param_k1 = -0.20
-# default_camera_param_k2 = 0.19
-# default_camera_param_k3 = 0
-# default_camera_param_k4 = 0
-# default_camera_param_k5 = 0
+
 image_width = 1280
 image_height = 964
 
@@ -241,6 +231,10 @@ def load_value_from_json(filename):
             trany = - trany
             rotx = - rotx
             roty = - roty
+            m_k3 = -m_k3
+            m_k4 = -m_k4
+            s_k3 = -s_k3
+            s_k4 = -s_k4
     elif (m_ttrans[0] == 0 and m_ttrans[1] == 0 and m_ttrans[2] == 0 and m_trot[0] == 0 and m_trot[1] == 0 and m_trot[2] == 0):
         print("master trans(0,0,0), rot(0,0,0)")
         # print(s_trot, s_ttrans)
@@ -267,6 +261,10 @@ def load_value_from_json(filename):
             trany = - trany
             rotx = - rotx
             roty = - roty
+            m_k3 = -m_k3
+            m_k4 = -m_k4
+            s_k3 = -s_k3
+            s_k4 = -s_k4
     #################################################################3
     print('|master    [ %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f]'%(m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5))
     print('|slave     [ %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f]'%(s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5))
@@ -294,14 +292,16 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
     # print(fjs)
     # print(type(fjs))
 
-    tR = np.eye(3)
-    tT = np.array([0,0,0])
-    tM1 = np.eye(3)
-    tM2 = np.eye(3)
+    # tR = np.eye(3)
+    # tT = np.array([0,0,0])
+    # tM1 = np.eye(3)
+    # tM2 = np.eye(3)
     tR = R.copy()
     tT = T.copy()
     tM1 = M1.copy()
     tM2 = M2.copy()
+    td1 = d1.copy()
+    td2 = d2.copy()
     if (enable_intrinsic_plus_focal == 1):
         print("flag enable_intrinsic_plus_focal")
         if(M1[0][0] > 0):
@@ -321,6 +321,11 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
             tM1[1][1] = - (M1[1][1])
             tM2[0][0] = - (M2[0][0])
             tM2[1][1] = - (M2[1][1])
+
+            td1[0][2] = - (td1[0][2])
+            td1[0][3] = - (td1[0][3])
+            td2[0][2] = - (td2[0][2])
+            td2[0][3] = - (td2[0][3])
     else:
         print("flag enable_intrinsic_minus_focal")
         if(M1[0][0] > 0):
@@ -338,13 +343,18 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
             tM1[1][1] = - (M1[1][1])
             tM2[0][0] = - (M2[0][0])
             tM2[1][1] = - (M2[1][1])
+
+            td1[0][2] = - (td1[0][2])
+            td1[0][3] = - (td1[0][3])
+            td2[0][2] = - (td2[0][2])
+            td2[0][3] = - (td2[0][3])
         else:
             print("input -focal")  #ok
 
     if (enable_extrinsic_left_to_right == 1):               # left to right: 0
         euler = rotationMatrixToEulerAngles(tR) * radianToDegree
-        print('T', T)
-        fjs["master"]["camera_pose"]['trans'] = *tT[0], *tT[1], *tT[2]
+        print('T', tT)
+        fjs["master"]["camera_pose"]['trans'] = tT[0], tT[1], tT[2]
         fjs["master"]["camera_pose"]['rot'] = euler[0], euler[1], euler[2]
     else:                                                   #right to left: 1
         t_matrix = np.eye(4)
@@ -691,6 +701,9 @@ class StereoCalibration(object):
         # self.objs_test[:,:2] = np.indices(patternsize).T.reshape(-1,2)
         # self.objs_test *= 30
 
+        tobj_center = np.mean(self.objp, axis=0)
+        self.objp_center = self.objp - tobj_center
+
         # print(type(self.objp))
         # print(self.objp)
 
@@ -699,9 +712,10 @@ class StereoCalibration(object):
         self.axis = np.float32([[marker_length * 0.001 *3, 0, 0], [0, marker_length * 0.001 *3, 0], [0, 0, marker_length * 0.001 * -3]]).reshape(-1, 3)
 
         # Arrays to store object points and image points from all the images.
-        self.objpoints = []  # 3d point in real world space
-        self.imgpoints_l = []  # 2d points in image plane.
-        self.imgpoints_r = []  # 2d points in image plane.
+        self.objpoints = []         # 3d point in real world space
+        self.objpoints_center = []  # 3d point in real world space for center of chart
+        self.imgpoints_l = []       # 2d points in image plane.
+        self.imgpoints_r = []       # 2d points in image plane.
 
         # self.cal_path = filepath
         if len(argv) >= 2:
@@ -754,9 +768,10 @@ class StereoCalibration(object):
 
         print(files_to_replace)
         for tpath in files_to_replace:
-            self.objpoints = []  # 3d point in real world space
-            self.imgpoints_l = []  # 2d points in image plane.
-            self.imgpoints_r = []  # 2d points in image plane.
+            self.objpoints = []         # 3d point in real world space
+            self.objpoints_center = []  # 3d point in real world space for center of chart
+            self.imgpoints_l = []       # 2d points in image plane.
+            self.imgpoints_r = []       # 2d points in image plane.
             print('tpath', tpath)
             self.cal_path = tpath
             self.cal_loadpoint = tpath
@@ -911,6 +926,7 @@ class StereoCalibration(object):
             ref_point, img_point_l, img_point_r = load_point_from_csv(fname)
 
             self.objpoints.append(ref_point)
+            # self.objpoints.append(self.objp_center)
             self.imgpoints_l.append(img_point_l)
             self.imgpoints_r.append(img_point_r)
 
@@ -926,6 +942,10 @@ class StereoCalibration(object):
             trany = - trany
             rotx = - rotx
             roty = - roty
+            m_k3 = -m_k3
+            m_k4 = -m_k4
+            s_k3 = -s_k3
+            s_k4 = -s_k4
 
         camera_matrix_l = np.zeros((3, 3), np.float64)
         camera_matrix_l[0][0] = m_fx
@@ -1028,6 +1048,7 @@ class StereoCalibration(object):
             ref_point, img_point_l, img_point_r = load_point_from_csv(fname)
 
             self.objpoints.append(ref_point)
+            # self.objpoints_center.append(self.objp_center)
             self.imgpoints_l.append(img_point_l)
             self.imgpoints_r.append(img_point_r)
 
@@ -1354,6 +1375,7 @@ class StereoCalibration(object):
                 count_ok_dual += 1
                 # If found, add object points, image points (after refining them)
                 self.objpoints.append(self.objp)
+                # self.objpoints_center.append(self.objp_center)
 
                 if (select_detect_pattern == 1):
                     rt = cv2.cornerSubPix(gray_l, corners_l, (11, 11), (-1, -1), self.criteria)
@@ -1564,6 +1586,7 @@ class StereoCalibration(object):
                 count_ok_dual += 1
                 # If found, add object points, image points (after refining them)
                 self.objpoints.append(self.objp)
+                # self.objpoints_center.append(self.objp_center)
 
                 if (select_detect_pattern == 1):
                     rt = cv2.cornerSubPix(gray_l, corners_l, (11, 11), (-1, -1), self.criteria)
@@ -2179,7 +2202,8 @@ class StereoCalibration(object):
             # _, rvec_r, tvec_r, _ = cv2.solvePnPRansac(tobjrefpoint[i], t_list_right[i], camera_matrix_r, dist_coeffs_r)
             _, rvec_l, tvec_l, _ = cv2.solvePnPRansac(tobjrefpoint[i], t_list_left[i], tmat, tmat_d)
             _, rvec_r, tvec_r, _ = cv2.solvePnPRansac(tobjrefpoint[i], t_list_right[i], tmat, tmat_d)
-            print(rvec_l, rvec_r, tvec_l, tvec_r)
+            # print(rvec_l, rvec_r, tvec_l, tvec_r)
+
             t2 = np.array([[0],[0],[0]])
             # tR, tT, _ , _ ,_ , _ , _ , _, _, _= cv2.composeRT( rvec_l, tvec_l, cv2.Rodrigues(RL)[0], t2)
             # tR2, tT2, _, _, _, _, _, _, _, _ = cv2.composeRT(rvec_r, tvec_r, cv2.Rodrigues(RR)[0], t2)
