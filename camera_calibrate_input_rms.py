@@ -93,7 +93,7 @@
 import numpy as np
 import cv2
 import glob
-#import argparse
+import argparse
 import math
 import pandas as pd
 #lip  #
@@ -102,6 +102,8 @@ import json
 import os
 import sys  #, getopt
 import csv
+import datetime as dt
+import scipy.optimize
 
 ####select user option for debugging ###########################################
 enable_debug_detect_pattern_from_image = 0                 #true: 1, false: 0
@@ -284,12 +286,14 @@ def load_value_from_json(filename):
 def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp, E, F):
     # fpd = pd.read_json(filename)
     # print("modify_value_from_json")
-    fp = open(filename + '_sample.json')
+    # fp = open(filename + '_sample.json')
+    init_json = {'type': 'Calibration Parameter for Stereo Camera', 'version': 1.2, 'master': {'serial': 0, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'k5': 0, 'calib_res': [0, 0]}}, 'slave': {'serial': 1, 'camera_pose': {'trans': [0, 0, 0], 'rot': [0, 0, 0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'k5': 0, 'calib_res': [0, 0]}}}
+    fjson = json.dumps(init_json)
     # print(filename + '_sample.json')
     # fp = open("D:\HET\calibration\python_stereo/" + filename + '_sample.json')
     # print("#########D:\HET\calibration\python_stereo/" + filename + '_sample.json')
-    fjs = json.load(fp)
-    # print(fjs)
+    fjs = json.loads(fjson)
+    print(fjs)
     # print(type(fjs))
 
     # tR = np.eye(3)
@@ -409,11 +413,19 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
         tsubname = tsubname + '_plus_f'
     else:
         tsubname = tsubname + '_minus_f'
-    wfp2 = open(path + '/' +filename + tsubname + '.json', 'w', encoding='utf-8')
+
+    for i in range(0, 1000, 1):
+        fnum = '_%03d' % (i)
+        # print(filename + tsubname + fnum + '.json')
+        if not os.path.isfile(path + '/'+ filename + tsubname + fnum + '.json'):
+            # print('break')
+            break
+    print('save....... ' + filename + tsubname + fnum + '.json')
+    wfp2 = open(path + '/' +filename + tsubname + fnum + '.json', 'w', encoding='utf-8')
     json.dump(fjs, wfp2, indent=4)
     wfp2.close()
 
-    fp.close()
+    # fp.close()
 
 
 def modify_value_from_json_from_plus_to_minus_focal(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp, E, F):
@@ -625,6 +637,53 @@ def save_coordinate_using_rectify_with_distance(path, objpoints, imgpoints_l, im
     output = pd.DataFrame(table, columns=col)
     output.to_csv(path + '/' + "totalDist_p_from_img.txt", index=False, header=False)
 
+def print_current_time(path, name):
+    flog = open(path + name, 'a')
+    tnow = dt.datetime.now()
+    flog.write('\n/////////////// %s-%2s-%2s %2s:%2s:%2s //////////////\n' % (
+    tnow.year, tnow.month, tnow.day, tnow.hour, tnow.minute, tnow.second))
+    flog.close()
+    print('%s-%2s-%2s %2s:%2s:%2s' % (tnow.year, tnow.month, tnow.day, tnow.hour, tnow.minute, tnow.second))
+
+def least_squares_stereo_rmse(x, tobj_point, timgpoint_l, timgpoint_r, A1, D1, A2, D2, R, T):
+    tot_error = 0
+    total_points = 0
+    # rvec_l = np.zeros(1,3)
+    # tvec_l = np.zeros(1,3)
+    rvec_l = x[0:3]
+    tvec_l = x[3:6]
+    # print(rvec_l, tvec_l)
+    rp_l, _ = cv2.projectPoints(tobj_point, rvec_l, tvec_l, A1, D1)
+    # print( 'rp_l' , rp_l )tobj_point
+    # tot_error += np.sum(np.square(np.float64(imgpoints_l[i] - rp_l)))
+    tot_error += np.sum(np.square(np.float64(rp_l - timgpoint_l)))
+    total_points += len(tobj_point)
+
+    # calculate world <-> cam2 transformation
+    rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
+    # print('rvec_r', 'tvec_r', rvec_r, tvec_r)
+
+    # compute reprojection error for cam2
+    rp_r, _ = cv2.projectPoints(tobj_point, rvec_r, tvec_r, A2, D2)
+    # print( 'rp_r' , rp_r )
+    # tot_error += np.square(rp_r - t_imgpoints_r).sum()
+    tot_error += np.sum(np.square(np.float64(rp_r - timgpoint_r)))
+    total_points += len(tobj_point)
+
+    # temp_error = np.square(rp_r - t_imgpoints_r).sum() + np.square(rp_l - t_imgpoints_l).sum()
+    temp_error = np.sum(np.square(np.float64(rp_l - timgpoint_l))) + np.sum(np.square(np.float64(rp_r - timgpoint_r)))
+    temp_points = 2 * len(tobj_point)
+    # temp_error = np.sum(np.square(np.float64(rp_l - timgpoint_l)))
+    # temp_points = len(tobj_point)
+    temp_mean_error = np.sqrt(temp_error / temp_points)
+
+    print('rmse %.8f' % temp_mean_error)
+    # print('temp_error ',temp_error)
+    # l_ps = l_proj_h2(x,itcs,objpoints)
+    # residuals = (imgpoints_l-l_ps).ravel()
+    # print('result\n', residuals[0:20])
+    return temp_mean_error
+
 #################################################################################################
 # https://www.learnopencv.com/rotation-matrix-to-euler-angles/
 # Checks if a matrix is a valid rotation matrix.
@@ -700,6 +759,9 @@ class StereoCalibration(object):
         # self.objs_test = np.zeros((np.prod(patternsize),3), np.float32)
         # self.objs_test[:,:2] = np.indices(patternsize).T.reshape(-1,2)
         # self.objs_test *= 30
+        # sum = np.sum(self.objs_test)
+        # # print(np.bincount(self.objs_test))
+        # print(self.objs_test.shape)
 
         tobj_center = np.mean(self.objp, axis=0)
         self.objp_center = self.objp - tobj_center
@@ -917,9 +979,10 @@ class StereoCalibration(object):
 
     # input - one & all csv point, output - stereo rms calc
     def calc_rms_about_stereo(self, cal_path, cal_loadjson, cal_loadpoint):
+        print_current_time(cal_path, "/log.txt")
         print('/////////calc_rms_about_stereo/////////')
-        loadpoint = glob.glob(cal_loadpoint + '/' + '[!distance_from_img|!rectify_from_img]*.CSV')
-
+        loadpoint = glob.glob(cal_loadpoint + '/' + '[!dr]*.csv')
+        # [!distance_from_img|!rectify_from_img]    [!dr]
         print(loadpoint)
         for i, fname in enumerate(loadpoint):
             print(i+1, 'st point loaded')
@@ -1013,7 +1076,7 @@ class StereoCalibration(object):
         print('uR', uR, '\nuT', uT, '\nuR33', uR33, '\n')
 
         print("=" * 50)
-        stero_rms, re_left, re_right = self.calc_rms_stereo3(self.objpoints, self.imgpoints_l, self.imgpoints_r,
+        stero_rms, re_left, re_right = self.calc_rms_stereo4(self.objpoints, self.imgpoints_l, self.imgpoints_r,
                                                              camera_matrix_l, dist_coef_l, camera_matrix_r, dist_coef_r, uR33, uT)
         ret_rp = stero_rms
         tE = tF = np.eye(3)
@@ -1039,7 +1102,9 @@ class StereoCalibration(object):
 
     # input - all point, output - json, func- mono and stereo calib
     def read_points_with_mono_stereo(self, cal_path, cal_loadjson, cal_loadpoint):
-        loadpoint = glob.glob(cal_loadpoint + '/' + '[!distance_from_img|!rectify_from_img]*.CSV')
+        print_current_time(cal_path, "/log.txt")
+
+        loadpoint = glob.glob(cal_loadpoint + '/' + '[!dr]*.CSV')
         # loadpoint.sort()
         print(loadpoint)
 
@@ -1191,7 +1256,9 @@ class StereoCalibration(object):
 
     # input - all point, output - json, func- stereo calib
     def read_points_with_stereo(self, cal_path, cal_loadjson, cal_loadpoint):
-        loadpoint = glob.glob(cal_loadpoint + '/[!distance_from_img][!rectify_from_img]*.CSV')
+        print_current_time(cal_path, "/log.txt")
+
+        loadpoint = glob.glob(cal_loadpoint + '/[!dr]*.CSV')
         # loadpoint.sort()
         # print(loadpoint)
 
@@ -1298,6 +1365,8 @@ class StereoCalibration(object):
 
     # input - one image and json, output - json, func- stereo calib
     def read_param_and_images_with_stereo(self, cal_path, cal_loadjson):
+        print_current_time(cal_path, "/log.txt")
+
         print("/////////read_param_and_images_with_stereo////////////")
         count_ok_dual = 0
 
@@ -1511,6 +1580,8 @@ class StereoCalibration(object):
 
     # input - all image, output - json, func- mono and stereo calib
     def read_images_with_mono_stereo(self, cal_path):
+        print_current_time(cal_path, "/log.txt")
+
         count_ok_dual = 0
         if (select_png_or_raw == 1):
             print(cal_path + '/RIGHT/*.RAW')
@@ -2840,6 +2911,8 @@ class StereoCalibration(object):
         flog.write("\nRMSE_Stereo verify (each of image) with RT\n")
         flog.write(str(A1)+'\n\n')
         print(A1,'\n')
+        rvec_l = np.zeros((3, 1))
+        tvec_l = np.zeros((3, 1))
         for i in range(len(obj_points)):
             t_imgpoints_l = imgpoints_l[i].reshape(-1, 1, 2)
             t_imgpoints_r = imgpoints_r[i].reshape(-1, 1, 2)
@@ -2888,6 +2961,99 @@ class StereoCalibration(object):
         print("=" * 50)
 
         return mean_error, p_reproj_left, p_reproj_right
+
+    def calc_rms_stereo4(self, obj_points, imgpoints_l, imgpoints_r, A1, D1, A2, D2, R, T):
+        tot_error = 0
+        total_points = 0
+        p_reproj_left = []
+        p_reproj_right = []
+        flog = open(self.cal_path + '/log.txt', 'a')
+        print("/" * 50)
+        print("RMSE_Stereo verify (each of image) with RT")
+        flog.write("=" * 50)
+        flog.write("\nRMSE_Stereo verify (each of image) with RT\n")
+        flog.write(str(A1)+'\n\n')
+        print(A1,'\n')
+        rvec_l = np.zeros((3, 1))
+        tvec_l = np.zeros((3, 1))
+        for i in range(len(obj_points)):
+            t_imgpoints_l = imgpoints_l[i].reshape(-1, 1, 2)
+            t_imgpoints_r = imgpoints_r[i].reshape(-1, 1, 2)
+
+            # if(i==0):
+            _, rvec_l, tvec_l = cv2.solvePnP(obj_points[i], t_imgpoints_l, A1, D1, flags=cv2.SOLVEPNP_ITERATIVE)
+            # else:
+            #     _, rvec_l, tvec_l = cv2.solvePnP(obj_points[i], t_imgpoints_l, A1, D1, flags=cv2.SOLVEPNP_ITERATIVE, rvec = rvec_l, tvec=tvec_l, useExtrinsicGuess=True)
+
+            print('\tR_L', rvec_l[0],rvec_l[1],rvec_l[2],'\n\tT_L', tvec_l[0],tvec_l[1],tvec_l[2])
+            flog.write('\tR_L [ %.8f, %.8f, %.8f]\n\tT_L [ %.8f, %.8f, %.8f]\n'%(rvec_l[0],rvec_l[1],rvec_l[2],tvec_l[0],tvec_l[1],tvec_l[2]))
+
+            # compute target RT
+            x = np.zeros((6,1))
+            x[0:3] = rvec_l
+            x[3:6] = tvec_l
+            # print(rvec_l, rvec_l.shape)
+            x = x.reshape(6)
+            # print('x\n', x)
+            # stereocalib_criteria = (cv2.TERM_CRITERIA_MAX_ITER +
+            #                         cv2.TERM_CRITERIA_EPS, 100, 1e-5)
+            # lgit_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.01)
+            # lip_criteria = (cv2.TERM_CRITERIA_MAX_ITER, 1, 0.5)
+            #
+            res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse, x0=x, #xtol=1e-10, gtol=1e-10, x_scale= 0.1, #ftol=1e-2, gtol =1e-2 ,
+                                               args=(obj_points[i], t_imgpoints_l, t_imgpoints_r, A1, D1, A2, D2, R, T))
+            print(res)
+            if res['success'] == False:
+                print('Failed minimization')
+                return np.nan
+
+            print('res', res['x'])
+            print(x)
+            rvec_l = res['x'][0:3]
+            tvec_l = res['x'][3:6]
+
+            print(rvec_l, rvec_l.shape, tvec_l, tvec_l.shape)
+            rp_l, _ = cv2.projectPoints(obj_points[i], rvec_l.reshape(3,1), tvec_l.reshape(3,1), A1, D1)
+            # print( 'rp_l' , rp_l )
+            # tot_error += np.sum(np.square(np.float64(imgpoints_l[i] - rp_l)))
+            tot_error += np.sum(np.square(np.float64(rp_l - t_imgpoints_l)))
+            total_points += len(obj_points[i])
+
+            # calculate world <-> cam2 transformation
+            rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
+            #print('rvec_r', 'tvec_r', rvec_r, tvec_r)
+
+            # compute reprojection error for cam2
+            rp_r, _ = cv2.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
+            # print( 'rp_r' , rp_r )
+            # tot_error += np.square(rp_r - t_imgpoints_r).sum()
+            tot_error += np.sum(np.square(np.float64(rp_r - t_imgpoints_r)))
+            total_points += len(obj_points[i])
+
+            #temp_error = np.square(rp_r - t_imgpoints_r).sum() + np.square(rp_l - t_imgpoints_l).sum()
+            temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(np.square(np.float64(rp_r - t_imgpoints_r)))
+            temp_points = 2 * len(obj_points[i])
+            temp_mean_error = np.sqrt(temp_error / temp_points)
+            print(str(i + 1) + 'st %.8f' % temp_mean_error)
+            flog.write(str(i+1) + 'st %.8f\n'%temp_mean_error)
+
+            rp_l = rp_l.reshape(-1, 2)
+            rp_r = rp_r.reshape(-1, 2)
+            p_reproj_left.append(rp_l)
+            p_reproj_right.append(rp_r)
+
+        mean_error = np.sqrt(tot_error / total_points)
+
+        print("=" * 50)
+        print('RMSE_Stereo verify ', mean_error)
+        flog.write("RMSE_Stereo verify, %.9f\n" % mean_error)
+        flog.write("=" * 50)
+        flog.write("\n")
+        flog.close()
+        print("=" * 50)
+
+        return mean_error, p_reproj_left, p_reproj_right
+
 
     def draw_crossline(self, img, x, y, color, thinkness):
         width = 3
@@ -3049,6 +3215,23 @@ def display_guide():
     pass
 
 if __name__ == '__main__':
+    #action
+    #1) calibration
+    #2) recalibration
+    #3) calculation Reprojection error
+    # def read_images_with_mono_stereo(self, cal_path):
+    # def read_param_and_images_with_stereo(self, cal_path, cal_loadjson):
+    # def read_points_with_stereo(self, cal_path, cal_loadjson, cal_loadpoint):
+    # def read_points_with_mono_stereo(self, cal_path, cal_loadjson, cal_loadpoint):
+    # def calc_rms_about_stereo(self, cal_path, cal_loadjson, cal_loadpoint):
+    # parser = argparse.ArgumentParser(description='Stereo camera calibration investigation')
+    # parser.add_argument('--action', type=str, required=True, help='action')
+    # parser.add_argument('--recursive', type=str, required=False, help='find recursive subdirectory')
+    # parser.add_argument('--path_point', type=str, required=False ,help='points path containing 3d object and 2d position')
+    # parser.add_argument('--path_img', type=str, required=False, help='images path')
+    # parser.add_argument('--path_json', required=False, help='json path containing camera calib param')
+    # args = parser.parse_args()
+
     # main(sys.argv[1:])
     # parser = argparse.ArgumentParser()
     # parser.add_argument('filepath', help='String Filepath')
