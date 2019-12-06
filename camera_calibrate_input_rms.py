@@ -726,10 +726,10 @@ class StereoCalibration(object):
             self.cal_loadjson = argv[2]
             self.cal_loadpoint = argv[3]
             print('argv[2]= ', argv[2], ', len= ', len(argv), '\n\n')
-            # self.calc_rms_about_stereo(self.cal_path, self.cal_loadjson, self.cal_loadpoint)
+            self.calc_rms_about_stereo(self.cal_path, self.cal_loadjson, self.cal_loadpoint)
             # self.read_points_with_stereo(self.cal_path, self.cal_loadjson, self.cal_loadpoint)
             # self.repeat_calibration(3, 3, self.cal_path, self.cal_loadjson, self.cal_loadpoint)
-            self.read_points_with_mono_stereo(self.cal_path, self.cal_loadjson, self.cal_loadpoint)
+            # self.read_points_with_mono_stereo(self.cal_path, self.cal_loadjson, self.cal_loadpoint)
 
         elif len(argv) >= 3:
             self.cal_loadjson = argv[2]
@@ -2203,6 +2203,7 @@ class StereoCalibration(object):
             _, rvec_l, tvec_l, _ = cv2.solvePnPRansac(tobjrefpoint[i], t_list_left[i], tmat, tmat_d)
             _, rvec_r, tvec_r, _ = cv2.solvePnPRansac(tobjrefpoint[i], t_list_right[i], tmat, tmat_d)
             # print(rvec_l, rvec_r, tvec_l, tvec_r)
+
             t2 = np.array([[0],[0],[0]])
             # tR, tT, _ , _ ,_ , _ , _ , _, _, _= cv2.composeRT( rvec_l, tvec_l, cv2.Rodrigues(RL)[0], t2)
             # tR2, tT2, _, _, _, _, _, _, _, _ = cv2.composeRT(rvec_r, tvec_r, cv2.Rodrigues(RR)[0], t2)
