@@ -283,11 +283,17 @@ def load_value_from_json(filename):
 
 
 ###save with result to stereo_config.json
+def convert(o):
+    if isinstance(o, np.float64):
+        return int(o)
+    print(o)
+    raise TypeError
+
 def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp, E, F):
     # fpd = pd.read_json(filename)
     # print("modify_value_from_json")
     # fp = open(filename + '_sample.json')
-    init_json = {'type': 'Calibration Parameter for Stereo Camera', 'version': 1.2, 'master': {'serial': 0, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'k5': 0, 'calib_res': [0, 0]}}, 'slave': {'serial': 1, 'camera_pose': {'trans': [0, 0, 0], 'rot': [0, 0, 0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'k5': 0, 'calib_res': [0, 0]}}}
+    init_json = {'type': 'Calibration Parameter for Stereo Camera', 'version': 1.2, 'master': {'serial': 0, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'k5': 0, 'calib_res': [0, 0]}}, 'slave': {'serial': 1, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'k5': 0, 'calib_res': [0, 0]}}}
     fjson = json.dumps(init_json)
     # print(filename + '_sample.json')
     # fp = open("D:\HET\calibration\python_stereo/" + filename + '_sample.json')
@@ -422,7 +428,8 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
             break
     print('save....... ' + filename + tsubname + fnum + '.json')
     wfp2 = open(path + '/' +filename + tsubname + fnum + '.json', 'w', encoding='utf-8')
-    json.dump(fjs, wfp2, indent=4)
+
+    json.dump(fjs, wfp2, indent=4, default=convert)
     wfp2.close()
 
     # fp.close()
@@ -638,6 +645,9 @@ def save_coordinate_using_rectify_with_distance(path, objpoints, imgpoints_l, im
     output.to_csv(path + '/' + "totalDist_p_from_img.txt", index=False, header=False)
 
 def print_current_time(path, name):
+    print(path)
+    if(path == None):
+        return
     flog = open(path + name, 'a')
     tnow = dt.datetime.now()
     flog.write('\n/////////////// %s-%2s-%2s %2s:%2s:%2s //////////////\n' % (
@@ -841,37 +851,46 @@ class StereoCalibration(object):
         self.axis = np.float32([[marker_length * 0.001 *3, 0, 0], [0, marker_length * 0.001 *3, 0], [0, 0, marker_length * 0.001 * -3]]).reshape(-1, 3)
 
         # Arrays to store object points and image points from all the images.
-        self.objpoints = []         # 3d point in real world space
-        self.objpoints_center = []  # 3d point in real world space for center of chart
-        self.imgpoints_l = []       # 2d points in image plane.
-        self.imgpoints_r = []       # 2d points in image plane.
 
-        if(argv == 'None'):
+
+        if(argv == 'Manual'):
             print("initialize done")
             return
+
         # self.cal_path = filepath
         if len(argv) >= 2:
-            self.cal_path = argv[1]
+            self.initialize(argv[1])
             print('argv[1]= ', argv[1], ', argc=', len(argv), '\n\n')
+        else:
+            print("argument is wrong. please check it, again\n")
+            return
 
         if len(argv) >= 4:
-            self.cal_loadjson = argv[2]
-            self.cal_loadpoint = argv[3]
+            cal_loadjson = argv[2]
+            cal_loadpoint = argv[3]
             print('argv[2]= ', argv[2], ', len= ', len(argv), '\n\n')
-            self.calc_rms_about_stereo(self.cal_path, self.cal_loadjson, self.cal_loadpoint)
-            # self.read_points_with_stereo(self.cal_path, self.cal_loadjson, self.cal_loadpoint)
-            # self.repeat_calibration(3, 3, self.cal_path, self.cal_loadjson, self.cal_loadpoint)
-            # self.read_points_with_mono_stereo(self.cal_path, self.cal_loadjson, self.cal_loadpoint)
+            self.calc_rms_about_stereo(self.cal_path, cal_loadjson, cal_loadpoint)
+            # self.read_points_with_stereo(self.cal_path, cal_loadjson, cal_loadpoint)
+            # self.repeat_calibration(3, 3, self.cal_path, cal_loadjson, cal_loadpoint)
+            # self.read_points_with_mono_stereo(self.cal_path, cal_loadjson, cal_loadpoint)
 
         elif len(argv) >= 3:
-            self.cal_loadjson = argv[2]
+            cal_loadjson = argv[2]
             print('argv[2]=', argv[2], ', len= ', len(argv), '\n\n')
-            self.read_param_and_images_with_stereo(self.cal_path, self.cal_loadjson)
+            self.read_param_and_images_with_stereo(self.cal_path, cal_loadjson)
         else:
             self.repeat_calibration(1,1,self.cal_path, 0, 0)
             # self.read_images_with_mono_stereo(self.cal_path)
         pass
 
+    def initialize(self, basepath):
+        # Arrays to store object points and image points from all the images.
+        self.objpoints = []  # 3d point in real world space
+        self.objpoints_center = []  # 3d point in real world space for center of chart
+        self.imgpoints_l = []  # 2d points in image plane.
+        self.imgpoints_r = []  # 2d points in image plane.
+        print('BasePath', basepath)
+        self.cal_path = basepath
 
     def repeat_calibration(self, action, idx, cal_path, cal_loadjson, cal_loadpoint):
         CURRENT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
@@ -899,9 +918,7 @@ class StereoCalibration(object):
                 self.imgpoints_l = []       # 2d points in image plane.
                 self.imgpoints_r = []       # 2d points in image plane.
                 print('tpath', tpath)
-                self.cal_path = tpath
-                self.cal_loadpoint = tpath
-                self.cal_loadjson = cal_loadjson
+
                 # self.read_points_with_stereo(tpath, cal_loadjson, tpath)
                 # self.read_points_with_mono_stereo(tpath, cal_loadjson, tpath)
                 self.read_images_with_mono_stereo(tpath)
@@ -936,9 +953,7 @@ class StereoCalibration(object):
                 self.imgpoints_l = []       # 2d points in image plane.
                 self.imgpoints_r = []       # 2d points in image plane.
                 print('tpath', tpath)
-                self.cal_path = tpath
-                self.cal_loadpoint = tpath
-                self.cal_loadjson = cal_loadjson
+
                 # self.read_points_with_stereo(tpath, cal_loadjson, tpath)
                 self.read_points_with_mono_stereo(tpath, cal_loadjson, tpath)
                 # self.read_images_with_mono_stereo(tpath)
@@ -1078,9 +1093,11 @@ class StereoCalibration(object):
         pass
 
     # input - one & all csv point, output - stereo rms calc
-    def calc_rms_about_stereo(self, cal_path, cal_loadjson, cal_loadpoint):
+    def calc_rms_about_stereo(self, cal_path, cal_loadjson, cal_loadpoint=None):
         print_current_time(cal_path, "/log.txt")
         print('/////////calc_rms_about_stereo/////////')
+        if(cal_loadpoint == None):
+            cal_loadpoint = cal_path
         loadpoint = glob.glob(cal_loadpoint + '/' + '[!dr]*.csv')
         # [!distance_from_img|!rectify_from_img]    [!dr]
         print(loadpoint)
@@ -1201,9 +1218,11 @@ class StereoCalibration(object):
         print("END - calc_rms_about_stereo")
 
     # input - all point, output - json, func- mono and stereo calib
-    def read_points_with_mono_stereo(self, cal_path, cal_loadjson, cal_loadpoint):
+    def read_points_with_mono_stereo(self, cal_path, cal_loadjson=None, cal_loadpoint=None):
         print_current_time(cal_path, "/log.txt")
 
+        if(cal_loadpoint == None):
+            cal_loadpoint = cal_path
         loadpoint = glob.glob(cal_loadpoint + '/' + '[!dr]*.CSV')
         # loadpoint.sort()
         print(loadpoint)
@@ -1240,17 +1259,20 @@ class StereoCalibration(object):
         # m_k4 = s_k4 = default_camera_param_k4
         # m_k5 = s_k5 = default_camera_param_k5
 
-        m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res \
-            = load_value_from_json(cal_loadjson)
-
-        m_fx = m_fy = s_fx = s_fy = default_camera_param_f
-        m_cx = s_cx = default_camera_param_cx
-        m_cy = s_cy = default_camera_param_cy
-        m_k1 = s_k1 = default_camera_param_k1
-        m_k2 = s_k2 = default_camera_param_k2
-        m_k3 = s_k3 = default_camera_param_k3
-        m_k4 = s_k4 = default_camera_param_k4
-        m_k5 = s_k5 = default_camera_param_k5
+        if(cal_loadjson != None):
+            m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res \
+                = load_value_from_json(cal_loadjson)
+        else:
+            m_fx = m_fy = s_fx = s_fy = default_camera_param_f
+            m_cx = s_cx = default_camera_param_cx
+            m_cy = s_cy = default_camera_param_cy
+            m_k1 = s_k1 = default_camera_param_k1
+            m_k2 = s_k2 = default_camera_param_k2
+            m_k3 = s_k3 = default_camera_param_k3
+            m_k4 = s_k4 = default_camera_param_k4
+            m_k5 = s_k5 = default_camera_param_k5
+            calib_res = [image_width,image_height]
+            tranx = trany = tranz = rotx = roty = rotz = 0.0
 
         camera_matrix_l = np.zeros((3, 3), np.float64)
         camera_matrix_l[0][0] = m_fx
@@ -1355,9 +1377,11 @@ class StereoCalibration(object):
 
 
     # input - all point, output - json, func- stereo calib
-    def read_points_with_stereo(self, cal_path, cal_loadjson, cal_loadpoint):
+    def read_points_with_stereo(self, cal_path, cal_loadjson=None, cal_loadpoint=None):
         print_current_time(cal_path, "/log.txt")
 
+        if(cal_loadpoint == None):
+            cal_loadpoint = cal_path
         loadpoint = glob.glob(cal_loadpoint + '/[!dr]*.CSV')
         # loadpoint.sort()
         # print(loadpoint)
@@ -1383,8 +1407,20 @@ class StereoCalibration(object):
         # flags |= cv2.CALIB_FIX_K4
         # flags |= cv2.CALIB_FIX_K5
 
-        m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res \
-            = load_value_from_json(cal_loadjson)
+        if(cal_loadjson != None):
+            m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res \
+                = load_value_from_json(cal_loadjson)
+        else:
+            m_fx = m_fy = s_fx = s_fy = default_camera_param_f
+            m_cx = s_cx = default_camera_param_cx
+            m_cy = s_cy = default_camera_param_cy
+            m_k1 = s_k1 = default_camera_param_k1
+            m_k2 = s_k2 = default_camera_param_k2
+            m_k3 = s_k3 = default_camera_param_k3
+            m_k4 = s_k4 = default_camera_param_k4
+            m_k5 = s_k5 = default_camera_param_k5
+            calib_res = [image_width,image_height]
+            tranx = trany = tranz = rotx = roty = rotz = 0.0
 
         camera_matrix_l = np.zeros((3, 3), np.float32)
         camera_matrix_l[0][0] = m_fx
@@ -1573,7 +1609,7 @@ class StereoCalibration(object):
         # print(len(self.imgpoints_l))
         # print(len(self.imgpoints_r))
 
-        save_coordinate_both_stereo_obj_img(self.cal_path, self.objpoints, self.imgpoints_l, self.imgpoints_r,
+        save_coordinate_both_stereo_obj_img(cal_path, self.objpoints, self.imgpoints_l, self.imgpoints_r,
                                             count_ok_dual)
 
         # flags = 0
@@ -1788,7 +1824,7 @@ class StereoCalibration(object):
         # print(len(self.imgpoints_l))
         # print(len(self.imgpoints_r))
 
-        save_coordinate_both_stereo_obj_img(self.cal_path, self.objpoints, self.imgpoints_l, self.imgpoints_r,
+        save_coordinate_both_stereo_obj_img(cal_path, self.objpoints, self.imgpoints_l, self.imgpoints_r,
                                             count_ok_dual)
 
         flags = 0

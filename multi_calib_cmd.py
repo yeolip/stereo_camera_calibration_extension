@@ -15,8 +15,77 @@ import datetime as dt
 import camera_calibrate_input_rms as stereoCalib
 
 class SearchManager(object):
-    def __init__(self, argv):
-        print(argv)
+    def __init__(self, args):
+
+        # 1) calibration
+        # 2) recalibration
+        # 3) calculation Reprojection error
+        if(args.action == 1):
+            print("1) calibration (action is %d)\n"%(args.action))
+            objCal = stereoCalib.StereoCalibration("Manual")
+            if (args.path_img != None):
+                objCal.initialize(args.path_img)
+                objCal.read_images_with_mono_stereo(args.path_img)
+            elif (args.path_point != None):
+                objCal.initialize(args.path_point)
+                objCal.read_points_with_mono_stereo(args.path_point, None , None)
+                # objCal.read_points_with_stereo(args.path_point, None, None)
+
+        elif(args.action == 2):
+            print("2) recalibration (action is %d)\n"%(args.action))
+            objCal = stereoCalib.StereoCalibration("Manual")
+            if (args.path_json != None ):
+                if(args.path_img != None):
+                    objCal.initialize(args.path_img)
+                    objCal.read_param_and_images_with_stereo(args.path_img, args.path_json)
+                elif(args.path_point != None):
+                    objCal.initialize(args.path_point)
+                    # objCal.read_points_with_mono_stereo(args.path_point, args.path_json, None)
+                    objCal.read_points_with_stereo(args.path_point, args.path_json, None)
+                    #please check intrinsic flag (GUESS or FIX)
+
+        elif(args.action == 3):
+            print("3) calculation Reprojection error (action is %d)\n"%(args.action))
+            objCal = stereoCalib.StereoCalibration("Manual")
+            if (args.path_point != None and args.path_json != None ):
+                objCal.initialize(args.path_point)
+                objCal.calc_rms_about_stereo(args.path_point, args.path_json, None)
+            # currently, not support for calculating Rp from image
+            # elif (args.path_img != None):
+            #     objCal.initialize(args.path_img)
+            #     self.calc_rms_about_stereo(args.path_img, args.path_json, None)
+
+        else:
+            print("action is wrong. value = ", args.action)
+        # --action 1 --path_img   ./image
+        # --action 1 --path_point ./point
+        # --action 2 --path_img   ./image --path_json ./calib.json
+        # --action 2 --path_point ./point --path_json ./calib.json
+        # --action 3 --path_img   ./image --path_json ./calib.json
+        # --action 3 --path_point ./point --path_json ./calib.json
+
+
+        ######### --recursive  check image
+        # --action 1 --path_img   ./image --recursive
+        # --action 2 --path_img   ./image --path_json ./calib.json --recursive
+        # --action 3 --path_img   ./image --path_json ./calib.json --recursive
+
+        ######### --recursive  check point
+        # --action 1 --path_point ./point --recursive
+        # --action 2 --path_point ./point --path_json ./calib.json --recursive
+        # --action 3 --path_point ./point --path_json ./calib.json --recursive
+
+        #***######## --recursive  check image & json
+        # --action 2 --path_img   ./image --recursive
+        # --action 3 --path_img   ./image --recursive
+
+        #***######## --recursive  check point & json
+        # --action 2 --path_point ./point --recursive
+        # --action 3 --path_point ./point --recursive
+
+
+
+        # print(argv)
         # self.cal_path = filepath
         # if len(argv) >= 2:
         #     self.cal_path = argv[1]
@@ -169,16 +238,17 @@ if __name__ == '__main__':
     parser.add_argument('--path_json', required=False, help='json path containing camera calib param')
     args = parser.parse_args()
     print(args)
-    if(args.action == '1'):
-        print("ok")
-    print("recursive %d"%(args.recursive))
-    if(args.path_img != None):
-        print(args.path_img)
-    if(args.path_point != None):
-        print(args.path_point)
-    if(args.path_json != None):
-        print(args.path_json)
+    # if(args.action == '1'):
+    #     print("ok")
+    # print("recursive %d"%(args.recursive))
+    # if(args.path_img != None):
+    #     print(args.path_img)
+    # if(args.path_point != None):
+    #     print(args.path_point)
+    # if(args.path_json != None):
+    #     print(args.path_json)
 
+    SearchManager(args)
     # --action 1 --path_img   ./image
     # --action 1 --path_point ./point
     # --action 1 --path_img   ./image --recursive
@@ -211,14 +281,15 @@ if __name__ == '__main__':
     # cal_data = objCal.StereoCalibration(sys.argv)
     # del objCal
     # objCal
-    objCal = stereoCalib.StereoCalibration("None")
-    # objCal.repeat_calibration(1, 1, args.path_img, 0, 0)
-    # self.repeat_calibration(1, 1, self.cal_path, 0, 0)
-    objCal.cal_path = "D:\Project\HET\calib\jawha/2D-CAL\master_#01/09_51_25/"
-    objCal.read_images_with_mono_stereo("D:\Project\HET\calib\jawha/2D-CAL\master_#01/09_51_25/")
-    # del objCal
-    objCal = stereoCalib.StereoCalibration("None")
-    objCal.cal_path = "D:\Project\HET\calib\jawha/2D-CAL\master_#02/09_53_37/"
-    objCal.read_images_with_mono_stereo("D:\Project\HET\calib\jawha/2D-CAL\master_#02/09_53_37/")
+
+    # objCal = stereoCalib.StereoCalibration("None")
+    # # objCal.repeat_calibration(1, 1, args.path_img, 0, 0)
+    # # self.repeat_calibration(1, 1, self.cal_path, 0, 0)
+    # objCal.cal_path = "D:\Project\HET\calib\jawha/2D-CAL\master_#01/09_51_25/"
+    # objCal.read_images_with_mono_stereo("D:\Project\HET\calib\jawha/2D-CAL\master_#01/09_51_25/")
+    # # del objCal
+    # objCal = stereoCalib.StereoCalibration("None")
+    # objCal.cal_path = "D:\Project\HET\calib\jawha/2D-CAL\master_#02/09_53_37/"
+    # objCal.read_images_with_mono_stereo("D:\Project\HET\calib\jawha/2D-CAL\master_#02/09_53_37/")
 
 
