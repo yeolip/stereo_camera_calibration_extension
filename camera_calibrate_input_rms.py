@@ -428,7 +428,6 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
             break
     print('save....... ' + filename + tsubname + fnum + '.json')
     wfp2 = open(path + '/' +filename + tsubname + fnum + '.json', 'w', encoding='utf-8')
-
     json.dump(fjs, wfp2, indent=4, default=convert)
     wfp2.close()
 
@@ -850,8 +849,6 @@ class StereoCalibration(object):
         #self.axis = np.float32([[3, 0, 0], [0, 3, 0], [0, 0, -3]]).reshape(-1, 3)
         self.axis = np.float32([[marker_length * 0.001 *3, 0, 0], [0, marker_length * 0.001 *3, 0], [0, 0, marker_length * 0.001 * -3]]).reshape(-1, 3)
 
-        # Arrays to store object points and image points from all the images.
-
 
         if(argv == 'Manual'):
             print("initialize done")
@@ -1212,7 +1209,6 @@ class StereoCalibration(object):
                                                                                                          self.imgpoints_r)
 
         self.display_reprojection_point_and_image_point(cal_path, self.imgpoints_l, self.imgpoints_r, re_left, re_right)
-
 
         # self.loop_moving_of_rot_and_trans(cal_path, uR, uT)
         print("END - calc_rms_about_stereo")
@@ -2411,7 +2407,6 @@ class StereoCalibration(object):
             _, rvec_l, tvec_l, _ = cv2.solvePnPRansac(tobjrefpoint[i], t_list_left[i], tmat, tmat_d)
             _, rvec_r, tvec_r, _ = cv2.solvePnPRansac(tobjrefpoint[i], t_list_right[i], tmat, tmat_d)
             # print(rvec_l, rvec_r, tvec_l, tvec_r)
-
             t2 = np.array([[0],[0],[0]])
             # tR, tT, _ , _ ,_ , _ , _ , _, _, _= cv2.composeRT( rvec_l, tvec_l, cv2.Rodrigues(RL)[0], t2)
             # tR2, tT2, _, _, _, _, _, _, _, _ = cv2.composeRT(rvec_r, tvec_r, cv2.Rodrigues(RR)[0], t2)
