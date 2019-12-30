@@ -380,18 +380,18 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
 
     fjs["master"]["lens_params"]['focal_len'] = tM1[0][0], tM1[1][1]
     fjs["master"]["lens_params"]['principal_point'] = tM1[0][2], tM1[1][2]
-    fjs["master"]["lens_params"]['k1'] = d1[0][0]
-    fjs["master"]["lens_params"]['k2'] = d1[0][1]
-    fjs["master"]["lens_params"]['k3'] = d1[0][2]
-    fjs["master"]["lens_params"]['k4'] = d1[0][3]
-    fjs["master"]["lens_params"]['k5'] = d1[0][4]
+    fjs["master"]["lens_params"]['k1'] = td1[0][0]
+    fjs["master"]["lens_params"]['k2'] = td1[0][1]
+    fjs["master"]["lens_params"]['k3'] = td1[0][2]
+    fjs["master"]["lens_params"]['k4'] = td1[0][3]
+    fjs["master"]["lens_params"]['k5'] = td1[0][4]
     fjs["slave"]["lens_params"]['focal_len'] = tM2[0][0], tM2[1][1]
     fjs["slave"]["lens_params"]['principal_point'] = tM2[0][2], tM2[1][2]
-    fjs["slave"]["lens_params"]['k1'] = d2[0][0]
-    fjs["slave"]["lens_params"]['k2'] = d2[0][1]
-    fjs["slave"]["lens_params"]['k3'] = d2[0][2]
-    fjs["slave"]["lens_params"]['k4'] = d2[0][3]
-    fjs["slave"]["lens_params"]['k5'] = d2[0][4]
+    fjs["slave"]["lens_params"]['k1'] = td2[0][0]
+    fjs["slave"]["lens_params"]['k2'] = td2[0][1]
+    fjs["slave"]["lens_params"]['k3'] = td2[0][2]
+    fjs["slave"]["lens_params"]['k4'] = td2[0][3]
+    fjs["slave"]["lens_params"]['k5'] = td2[0][4]
     print("*" * 50)
 
     fjs["master"]["lens_params"]['calib_res'] = imgsize
@@ -876,8 +876,8 @@ class StereoCalibration(object):
             print('argv[2]=', argv[2], ', len= ', len(argv), '\n\n')
             self.read_param_and_images_with_stereo(self.cal_path, cal_loadjson)
         else:
-            self.repeat_calibration(1,1,self.cal_path, 0, 0)
-            # self.read_images_with_mono_stereo(self.cal_path)
+            # self.repeat_calibration(1,1,self.cal_path, 0, 0)
+            self.read_images_with_mono_stereo(self.cal_path)
         pass
 
     def initialize(self, basepath):
@@ -2962,6 +2962,8 @@ class StereoCalibration(object):
         flog = open(self.cal_path + '/log.txt', 'a')
         print("=" * 50)
         print("RMSE_Stereo verify (each of image)")
+        print(A1,'\n')
+        print(D1,'\n')
         flog.write("=" * 50)
         flog.write("\nRMSE_Stereo verify (each of image)\n")
 
@@ -3107,6 +3109,7 @@ class StereoCalibration(object):
         flog.write("\nRMSE_Stereo verify (each of image) with RT\n")
         flog.write(str(A1)+'\n\n')
         print(A1,'\n')
+        print(D1,'\n')
         rvec_l = np.zeros((3, 1))
         tvec_l = np.zeros((3, 1))
         for i in range(len(obj_points)):
@@ -3119,8 +3122,8 @@ class StereoCalibration(object):
            # else:
             #     _, rvec_l, tvec_l = cv2.solvePnP(obj_points[i], t_imgpoints_l, A1, D1, flags=cv2.SOLVEPNP_ITERATIVE, rvec = rvec_l, tvec=tvec_l, useExtrinsicGuess=True)
 
-            print('\tR_L', rvec_l[0],rvec_l[1],rvec_l[2],'\n\tT_L', tvec_l[0],tvec_l[1],tvec_l[2])
-            flog.write('\tR_L [ %.8f, %.8f, %.8f]\n\tT_L [ %.8f, %.8f, %.8f]\n'%(rvec_l[0],rvec_l[1],rvec_l[2],tvec_l[0],tvec_l[1],tvec_l[2]))
+            # print('\tR_L', rvec_l[0],rvec_l[1],rvec_l[2],'\n\tT_L', tvec_l[0],tvec_l[1],tvec_l[2])
+            # flog.write('\tR_L [ %.8f, %.8f, %.8f]\n\tT_L [ %.8f, %.8f, %.8f]\n'%(rvec_l[0],rvec_l[1],rvec_l[2],tvec_l[0],tvec_l[1],tvec_l[2]))
 
             # compute target RT
             x = np.zeros((12,1))
@@ -3195,7 +3198,9 @@ class StereoCalibration(object):
             rvec_l = res['x'][0:3]
             tvec_l = res['x'][3:6]
 
-            print("\tret_R_L", rvec_l, rvec_l.shape, '\n\tret_T_L',tvec_l, tvec_l.shape)
+            print('\tret_R_L', rvec_l[0], rvec_l[1], rvec_l[2], '\n\tret_T_L', tvec_l[0], tvec_l[1], tvec_l[2])
+            flog.write('\tret_R_L [ %.8f, %.8f, %.8f]\n\tret_T_L [ %.8f, %.8f, %.8f]\n' % (rvec_l[0], rvec_l[1], rvec_l[2], tvec_l[0], tvec_l[1], tvec_l[2]))
+
             rp_l, _ = cv2.projectPoints(obj_points[i], rvec_l.reshape(3,1), tvec_l.reshape(3,1), A1, D1)
             # print( 'rp_l' , rp_l )
             # tot_error += np.sum(np.square(np.float64(imgpoints_l[i] - rp_l)))

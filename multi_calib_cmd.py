@@ -1,6 +1,6 @@
 #import numpy as np
 #import cv2
-#import glob
+import glob
 import argparse
 #import math
 #import pandas as pd
@@ -111,12 +111,14 @@ class SearchManager(object):
             if (args.action == 1):
                 print("1) calibration (action is %d)\n" % (args.action))
                 if (args.path_img != None and len(tlist_of_images) >= 1):
-                    for tpath in tlist_of_images:
+                    for tnum, tpath in enumerate(tlist_of_images):
+                        print('\n###### ', tnum + 1, 'st#################')
                         print("\nIMAGE ", tpath)
                         objCal.initialize(tpath)
                         objCal.read_images_with_mono_stereo(tpath)
                 if (args.path_point != None and len(tlist_of_points) >= 1):
-                    for tpath in tlist_of_points:
+                    for tnum, tpath in enumerate(tlist_of_points):
+                        print('\n###### ', tnum + 1, 'st#################')
                         print("\nPOINT ", tpath)
                         objCal.initialize(tpath)
                         objCal.read_points_with_mono_stereo(tpath, None , None)
@@ -125,12 +127,14 @@ class SearchManager(object):
                 print("2) recalibration (action is %d)\n"%(args.action))
                 if (args.path_json != None ):
                     if (args.path_img != None and len(tlist_of_images) >= 1):
-                        for tpath in tlist_of_images:
+                        for tnum, tpath in enumerate(tlist_of_images):
+                            print('\n###### ', tnum + 1, 'st#################')
                             print("\nIMAGE ", tpath)
                             objCal.initialize(tpath)
                             objCal.read_param_and_images_with_stereo(tpath, args.path_json)
                     if (args.path_point != None and len(tlist_of_points) >= 1):
-                        for tpath in tlist_of_points:
+                        for tnum, tpath in enumerate(tlist_of_points):
+                            print('\n###### ', tnum + 1, 'st#################')
                             print("\nPOINT ", tpath)
                             objCal.initialize(tpath)
                             # objCal.read_points_with_mono_stereo(tpath, args.path_json, None)
@@ -138,11 +142,33 @@ class SearchManager(object):
                             #please check intrinsic flag (GUESS or FIX)
                 else:
                     print("special 처리 필요 - auto load json\n")
+                    tlist_images_with_json , tlist_points_with_json = self.extract_available_calib_data(tlist_of_images, tlist_of_points)
+                    for tnum, tlist_data in enumerate(tlist_images_with_json):
+                        print('\n###### ', tnum+1, 'st#################')
+                        print("\nIMAGE ", tlist_data[0], '\n,JSON ',  tlist_data[1])
+                        objCal.initialize(tlist_data[0])
+                        objCal.read_param_and_images_with_stereo(tlist_data[0], tlist_data[1])
+                    for tnum, tlist_data in enumerate(tlist_points_with_json):
+                        print('\n###### ', tnum+1, 'st#################')
+                        print("\nPOINT ", tlist_data[0], '\n,JSON ',  tlist_data[1])
+                        objCal.initialize(tlist_data[0])
+                        # objCal.read_points_with_mono_stereo(tlist_data[0], tlist_data[1], None)
+                        objCal.read_points_with_stereo(tlist_data[0], tlist_data[1], None)
+
+
+                    # print('\ntlist_of_points_with_json len=', len(tlist_points_with_json))
+                    for tnum, tlist_data in enumerate(tlist_points_with_json):
+                        print('\n###### ', tnum+1, 'st#################')
+                        print("\nPOINT ", tlist_data[0], '\n,JSON ',  tlist_data[1])
+                        objCal.initialize(tlist_data[0])
+                        # objCal.read_points_with_mono_stereo(tlist_data[0], tlist_data[1], None)
+                        objCal.read_points_with_stereo(tlist_data[0], tlist_data[1], None)
             elif(args.action == 3):
                 print("3) calculation Reprojection error (action is %d)\n"%(args.action))
                 if (args.path_json != None ):
                     if (args.path_point != None and len(tlist_of_points) >= 1):
-                        for tpath in tlist_of_points:
+                        for tnum, tpath in enumerate(tlist_of_points):
+                            print('\n###### ', tnum + 1, 'st#################')
                             print("\nPOINT ", tpath)
                             objCal.initialize(tpath)
                             objCal.calc_rms_about_stereo(tpath, args.path_json, None)
@@ -151,93 +177,78 @@ class SearchManager(object):
                     #     objCal.initialize(args.path_img)
                     #     self.calc_rms_about_stereo(args.path_img, args.path_json, None)
                 else:
-                    print("special 처리 필요 - auto load json\n")
+                    tlist_images_with_json , tlist_points_with_json = self.extract_available_calib_data(tlist_of_images, tlist_of_points)
+                    # currently, not support for calculating Rp from image
+                    # print('\ntlist_images_with_json len=', len(tlist_images_with_json))
+                    # for timage_addr, tjson_addr in tlist_images_with_json:
+                    #     print("\nIMAGE ", timage_addr, '\n,JSON ', tjson_addr)
+                    #     objCal.initialize(tpath)
+                    #     objCal.calc_rms_about_stereo(timage_addr, tjson_addr, None)
+
+                    # print('\ntlist_of_points_with_json len=', len(tlist_points_with_json))
+                    for tnum, tlist_data in enumerate(tlist_points_with_json):
+                        print('\n###### ', tnum+1, 'st#################')
+                        print("\nPOINT ", tlist_data[0], '\n,JSON ',  tlist_data[1])
+                        objCal.initialize(tlist_data[0])
+                        objCal.calc_rms_about_stereo(tlist_data[0], tlist_data[1], None)
+
         else:
             return False
 
         return True
 
     def extract_available_calib_data(self, tlist_of_images, tlist_of_points):
-        # CURRENT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-        # print("CURRENT RUN DIR ",CURRENT_DIR)
+        print("\t>>>>>%s>>>>>START>>>>>"%(sys._getframe(0).f_code.co_name))
+        tlist_of_images_with_json = []
+        tlist_of_points_with_json = []
 
         if(len(tlist_of_images) >= 1):
             try:
-                os.chdir(path_img)
-                print("Search image path", path_img)
-                for dirpath, dirnames, filenames in os.walk("."):
-                    if(os.path.exists(dirpath+'/LEFT') and os.path.exists(dirpath+'/RIGHT')):
-                        # print(dirpath)
-                        list_of_images.append(os.path.join(dirpath)+'\\')
-                    elif(os.path.exists(dirpath + '/L') and os.path.exists(dirpath + '/R')):
-                        # print(dirpath)
-                        list_of_images.append(os.path.join(dirpath)+'\\')
+                for tpath in tlist_of_images:
+                    # print("Search image path", tpath)
+                    list_of_json = glob.glob(tpath + '\\' + '*.json')
+                    for tjson in list_of_json:
+                        tlist_of_images_with_json.append([tpath, tjson])
             except OSError:
                 print("Can't change the Current Working Directory!")
 
         if(len(tlist_of_points) >= 1):
             try:
-                os.chdir(path_point)
-                print("Search point path", path_point)
-                for dirpath, dirnames, filenames in os.walk("."):
-                    for filename in [f for f in filenames if f.endswith(".json")]:
-                        # list_of_points.append(os.path.join(dirpath))
-                        if("distance_from_img" in filename):
-                            continue
-                        if("rectify_from_img" in filename):
-                            continue
-                        if("temperature" in filename):
-                            continue
-                        list_of_points.append(os.path.abspath(dirpath))
-                        # print(filename)
-                        break
-                # os.chdir(CURRENT_DIR)
+                for tpath in tlist_of_points:
+                    # print("Search point path", tpath)
+                    list_of_json = glob.glob(tpath + '\\' + '*.json')
+                    for tjson in list_of_json:
+                        tlist_of_points_with_json.append([tpath, tjson])
+                # for tpath in tlist_of_points:
+                #     os.chdir(tpath)
+                #     print("Search point path", tpath)
+                #     for dirpath, dirnames, filenames in os.walk("."):
+                #         for filename in [f for f in filenames if f.endswith(".json")]:
+                #             # print(os.path.abspath(dirpath)+'\\'+filename)
+                #             tlist_of_points_with_json.append([tpath , os.path.abspath(dirpath)+'\\'+filename])
             except OSError:
                 print("Can't change the Current Working Directory!!")
 
-        print('\nlist_of_images len=', len(list_of_images))
-        for tpath in list_of_images:
-            print('list_of_images ', tpath)
-            # self.read_points_with_stereo(tpath, cal_loadjson, tpath)
-            # self.read_points_with_mono_stereo(tpath, cal_loadjson, tpath)
-            # self.read_images_with_mono_stereo(tpath)
+        print('\nlist_of_images len=', len(tlist_of_images_with_json))
+        for timage_addr, tjson_addr in tlist_of_images_with_json:
+            print('timage_addr=', timage_addr, ',tjson_addr=', tjson_addr)
 
-        print('\nlist_of_points len=', len(list_of_points))
-        for tpath in list_of_points:
-            print('list_of_points ', tpath)
-            # self.read_points_with_stereo(tpath, cal_loadjson, tpath)
-            # self.read_points_with_mono_stereo(tpath, cal_loadjson, tpath)
-            # self.read_images_with_mono_stereo(tpath)
+        print('\ntlist_of_points_with_json len=', len(tlist_of_points_with_json))
+        for tpoint_addr, tjson_addr in tlist_of_points_with_json:
+            print('tpoint_addr=', tpoint_addr, ',tjson_addr=', tjson_addr)
 
-        # try:
-        #     os.chdir(cal_path)
-        #     print("change path", cal_path)
-        #     files_to_replace = []
-        #     for dirpath, dirnames, filenames in os.walk("."):
-        #         if(os.path.exists(dirpath+'/LEFT') and os.path.exists(dirpath+'/RIGHT')):
-        #             files_to_replace.append(os.path.join(dirpath))
-        #             print("ok")
-        #         else:
-        #             print('ng')
-        #         # for filename in [f for f in filenames if f.endswith(".json")]:
-        #         print(os.path.join(dirpath))
-        # except OSError:
-        #     print("Can't change the Current Working Directory")
-        #
-        # print(files_to_replace)
-        # self.read_images_with_mono_stereo(self.cal_path)
-        return list_of_images, list_of_points
+        print("\t<<<<<%s<<<<<END<<<<<" % (sys._getframe(0).f_code.co_name))
+        return tlist_of_images_with_json, tlist_of_points_with_json
 
     def extract_available_folder(self, path_img, path_point):
-        # CURRENT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-        # print("CURRENT RUN DIR ",CURRENT_DIR)
+        print("\t>>>>>%s>>>>>START>>>>>"%(sys._getframe(0).f_code.co_name))
         list_of_images = []
         list_of_points = []
 
         if(path_img != None):
             try:
                 os.chdir(path_img)
-                print("Search image path", path_img)
+                print("\tSearch image path", path_img)
                 for dirpath, dirnames, filenames in os.walk("."):
                     if(os.path.exists(dirpath+'/LEFT') and os.path.exists(dirpath+'/RIGHT')):
                         # print(dirpath)
@@ -251,10 +262,9 @@ class SearchManager(object):
         if (path_point != None):
             try:
                 os.chdir(path_point)
-                print("Search point path", path_point)
+                print("\tSearch point path", path_point)
                 for dirpath, dirnames, filenames in os.walk("."):
                     for filename in [f for f in filenames if f.endswith(".csv")]:
-                        # list_of_points.append(os.path.join(dirpath))
                         if("distance_from_img" in filename):
                             continue
                         if("rectify_from_img" in filename):
@@ -264,41 +274,18 @@ class SearchManager(object):
                         list_of_points.append(os.path.abspath(dirpath))
                         # print(filename)
                         break
-                # os.chdir(CURRENT_DIR)
             except OSError:
                 print("Can't change the Current Working Directory!!")
 
-        print('\nlist_of_images len=', len(list_of_images))
+        print('\n\tlist_of_images len=', len(list_of_images))
         for tpath in list_of_images:
-            print('list_of_images ', tpath)
-            # self.read_points_with_stereo(tpath, cal_loadjson, tpath)
-            # self.read_points_with_mono_stereo(tpath, cal_loadjson, tpath)
-            # self.read_images_with_mono_stereo(tpath)
+            print('\tlist_of_images ', tpath)
 
-        print('\nlist_of_points len=', len(list_of_points))
+        print('\n\tlist_of_points len=', len(list_of_points))
         for tpath in list_of_points:
-            print('list_of_points ', tpath)
-            # self.read_points_with_stereo(tpath, cal_loadjson, tpath)
-            # self.read_points_with_mono_stereo(tpath, cal_loadjson, tpath)
-            # self.read_images_with_mono_stereo(tpath)
+            print('\tlist_of_points ', tpath)
 
-        # try:
-        #     os.chdir(cal_path)
-        #     print("change path", cal_path)
-        #     files_to_replace = []
-        #     for dirpath, dirnames, filenames in os.walk("."):
-        #         if(os.path.exists(dirpath+'/LEFT') and os.path.exists(dirpath+'/RIGHT')):
-        #             files_to_replace.append(os.path.join(dirpath))
-        #             print("ok")
-        #         else:
-        #             print('ng')
-        #         # for filename in [f for f in filenames if f.endswith(".json")]:
-        #         print(os.path.join(dirpath))
-        # except OSError:
-        #     print("Can't change the Current Working Directory")
-        #
-        # print(files_to_replace)
-        # self.read_images_with_mono_stereo(self.cal_path)
+        print("\t<<<<<%s<<<<<END<<<<<" % (sys._getframe(0).f_code.co_name))
         return list_of_images, list_of_points
 
 if __name__ == '__main__':
@@ -366,8 +353,10 @@ if __name__ == '__main__':
     # objCal.read_images_with_mono_stereo(tpath)
     # # # del objCal
     # objCal = stereoCalib.StereoCalibration("Manual")
-    # tpath = "D:\Project\HET\calib\jawha/2D-CAL/test/master_#01/09_51_25/"
+    # tpath = "D:\Project\HET\calibration\python_stereo\input_sm"
+    # tjson = "D:/Project/HET/calibration/python_stereo/input_sm/stereo_config.json"
     # objCal.initialize(tpath)
-    # objCal.read_images_with_mono_stereo(tpath)
+    # objCal.calc_rms_about_stereo(tpath, tjson, None)
+    # objCal.read_points_with_mono_stereo(tpath, None, None)
 
 
