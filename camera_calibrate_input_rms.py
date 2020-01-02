@@ -294,6 +294,7 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
     # print("modify_value_from_json")
     # fp = open(filename + '_sample.json')
     init_json = {'type': 'Calibration Parameter for Stereo Camera', 'version': 1.2, 'master': {'serial': 0, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'k5': 0, 'calib_res': [0, 0]}}, 'slave': {'serial': 1, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'k5': 0, 'calib_res': [0, 0]}}}
+
     fjson = json.dumps(init_json)
     # print(filename + '_sample.json')
     # fp = open("D:\HET\calibration\python_stereo/" + filename + '_sample.json')
@@ -647,6 +648,7 @@ def print_current_time(path, name):
     print(path)
     if(path == None):
         return
+
     flog = open(path + name, 'a')
     tnow = dt.datetime.now()
     flog.write('\n/////////////// %s-%2s-%2s %2s:%2s:%2s //////////////\n' % (
@@ -685,7 +687,6 @@ def least_squares_stereo_rmse(x, tobj_point, timgpoint_l, timgpoint_r, A1, D1, A
     # temp_error = np.sum(np.square(np.float64(rp_l - timgpoint_l)))
     # temp_points = len(tobj_point)
     temp_mean_error = np.sqrt(temp_error / temp_points)
-
 
     return temp_mean_error
 
@@ -1092,6 +1093,7 @@ class StereoCalibration(object):
         pass
 
     # input - one & all csv point, output - stereo rms calc
+
     def calc_rms_about_stereo(self, cal_path, cal_loadjson, cal_loadpoint=None, cal_loadimg=None):
         print('/////////calc_rms_about_stereo/////////')
         if(cal_loadimg != None):
@@ -1129,7 +1131,6 @@ class StereoCalibration(object):
                     fd_r.close
                     img_l = cv2.cvtColor(gray_l, cv2.COLOR_GRAY2BGR)
                     img_r = cv2.cvtColor(gray_r, cv2.COLOR_GRAY2BGR)
-
                 else:
                     img_l = cv2.imread(images_left[i])
                     img_r = cv2.imread(images_right[i])
@@ -1314,6 +1315,7 @@ class StereoCalibration(object):
 
         if(cal_loadpoint == None):
             cal_loadpoint = cal_path
+
         loadpoint = glob.glob(cal_loadpoint + '/' + '[!dr]*.CSV')
         # loadpoint.sort()
         print(loadpoint)
@@ -1468,6 +1470,7 @@ class StereoCalibration(object):
 
         if(cal_loadpoint == None):
             cal_loadpoint = cal_path
+
         loadpoint = glob.glob(cal_loadpoint + '/[!dr]*.CSV')
         # loadpoint.sort()
         # print(loadpoint)
@@ -3179,6 +3182,7 @@ class StereoCalibration(object):
         p_reproj_left = []
         p_reproj_right = []
         print('input R',R, '\ninput T',T)
+
         flog = open(self.cal_path + '/log.txt', 'a')
         print("/" * 50)
         print("RMSE_Stereo verify (each of image) with RT")
@@ -3196,7 +3200,7 @@ class StereoCalibration(object):
             # if(i==0):
             _, rvec_l, tvec_l = cv2.solvePnP(obj_points[i], t_imgpoints_l, A1, D1, flags=cv2.SOLVEPNP_ITERATIVE)
             # _, rvec_r, tvec_r = cv2.solvePnP(obj_points[i], t_imgpoints_r, A2, D2, flags=cv2.SOLVEPNP_ITERATIVE)
-           # else:
+            # else:
             #     _, rvec_l, tvec_l = cv2.solvePnP(obj_points[i], t_imgpoints_l, A1, D1, flags=cv2.SOLVEPNP_ITERATIVE, rvec = rvec_l, tvec=tvec_l, useExtrinsicGuess=True)
             pre_rvec_l = rvec_l
             pre_tvec_l = tvec_l
@@ -3346,6 +3350,7 @@ class StereoCalibration(object):
 
             # compute reprojection error for cam2
             rp_r, _ = cv2.projectPoints(obj_points[i], rvec_r2, tvec_r2, A2, D2)
+
             # print( 'rp_r' , rp_r )
             # tot_error += np.square(rp_r - t_imgpoints_r).sum()
             tot_error += np.sum(np.square(np.float64(rp_r - t_imgpoints_r)))
