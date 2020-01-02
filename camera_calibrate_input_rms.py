@@ -756,7 +756,8 @@ def least_squares_stereo_rmse3(x, R, T):
 
     # residuals = np.sum(np.square(rvec_r-rvec_r2) + np.square(tvec_r-tvec_r2))
     rvec_r3, tvec_r3 = cv2.composeRT(rvec_r2, tvec_r2, -rvec_r, -tvec_r)[:2]
-    residuals = np.sum(np.square(tvec_r3))
+    # residuals = np.sum(np.square(tvec_r3))
+    residuals = np.sum(np.square(tvec_r3)+np.square(rvec_r3))
     print('result\n', residuals)
     return residuals
 
@@ -831,6 +832,7 @@ class StereoCalibration(object):
         self.objp = np.zeros((marker_point_x * marker_point_y, 3), np.float32)
         self.objp[:, :2] = np.mgrid[0: marker_point_x, 0: marker_point_y].T.reshape(-1, 2) * marker_length * 0.001
         # self.objp[:, :2] = self.objp[:, :2] - [((0 + (marker_point_x - 1) * marker_length * 0.001) / 2), ((0 + (marker_point_y - 1) * marker_length * 0.001) / 2)]
+
         # patternsize = (10,10)
         # self.objs_test = np.zeros((np.prod(patternsize),3), np.float32)
         # self.objs_test[:,:2] = np.indices(patternsize).T.reshape(-1,2)
@@ -1090,22 +1092,115 @@ class StereoCalibration(object):
         pass
 
     # input - one & all csv point, output - stereo rms calc
-    def calc_rms_about_stereo(self, cal_path, cal_loadjson, cal_loadpoint=None):
-        print_current_time(cal_path, "/log.txt")
+    def calc_rms_about_stereo(self, cal_path, cal_loadjson, cal_loadpoint=None, cal_loadimg=None):
         print('/////////calc_rms_about_stereo/////////')
-        if(cal_loadpoint == None):
-            cal_loadpoint = cal_path
-        loadpoint = glob.glob(cal_loadpoint + '/' + '[!dr]*.csv')
-        # [!distance_from_img|!rectify_from_img]    [!dr]
-        print(loadpoint)
-        for i, fname in enumerate(loadpoint):
-            print(i+1, 'st point loaded')
-            ref_point, img_point_l, img_point_r = load_point_from_csv(fname)
+        if(cal_loadimg != None):
+            cal_path = cal_loadimg
+            print_current_time(cal_path, "/log.txt")
 
-            self.objpoints.append(ref_point)
-            # self.objpoints.append(self.objp_center)
-            self.imgpoints_l.append(img_point_l)
-            self.imgpoints_r.append(img_point_r)
+            if (select_png_or_raw == 1):
+                print(cal_path + '/RIGHT/*.RAW')
+                images_right = glob.glob(cal_path + '/R*/*.RAW')
+                images_left = glob.glob(cal_path + '/L*/*.RAW')
+            else:
+                print(cal_path + '/RIGHT/*.JPG')
+                images_right = glob.glob(cal_path + '/R*/*.JPG')
+                images_right += glob.glob(cal_path + '/R*/*.BMP')
+                images_right += glob.glob(cal_path + '/R*/*.PNG')
+                images_left = glob.glob(cal_path + '/L*/*.JPG')
+                images_left += glob.glob(cal_path + '/L*/*.PNG')
+                images_left += glob.glob(cal_path + '/L*/*.BMP')
+            # print(images_left)
+
+            for i, fname in enumerate(images_right):
+                if (select_png_or_raw == 1):
+                    fd_l = open(images_left[i], 'rb')
+                    fd_r = open(images_right[i], 'rb')
+                    length = len(fd_l.read())
+                    fd_l.seek(0)
+                    # print(length)
+                    rows = image_width
+                    cols = int(length / rows)
+                    f_l = np.fromfile(fd_l, dtype=np.uint8, count=rows * cols)
+                    f_r = np.fromfile(fd_r, dtype=np.uint8, count=rows * cols)
+                    gray_l = f_l.reshape((cols, rows))
+                    gray_r = f_r.reshape((cols, rows))
+                    fd_l.close
+                    fd_r.close
+                    img_l = cv2.cvtColor(gray_l, cv2.COLOR_GRAY2BGR)
+                    img_r = cv2.cvtColor(gray_r, cv2.COLOR_GRAY2BGR)
+
+                else:
+                    img_l = cv2.imread(images_left[i])
+                    img_r = cv2.imread(images_right[i])
+
+                    gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
+                    gray_r = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)
+                # gray_l = cv2.adaptiveThreshold(gray_l, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
+                # gray_r = cv2.adaptiveThreshold(gray_r, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
+                # ret, gray_l = cv2.threshold(gray_l, 40, 200, cv2.THRESH_BINARY)
+                # ret, gray_r = cv2.threshold(gray_r, 40, 200, cv2.THRESH_BINARY)
+
+                # Find the chess board corners
+                if (select_detect_pattern == 1):
+                    # flags = cv2.CALIB_CB_ADAPTIVE_THRESH | cv2.CALIB_CB_NORMALIZE_IMAGE | cv2.CALIB_CB_FILTER_QUADS
+                    ret_l, corners_l = cv2.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), None)
+                    ret_r, corners_r = cv2.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), None)
+                    # ret_l, corners_l = cv2.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), flags = cv2.CALIB_CB_ADAPTIVE_THRESH  )
+                    # ret_r, corners_r = cv2.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), flags=cv2.CALIB_CB_ADAPTIVE_THRESH)
+                else:
+                    blobPar = cv2.SimpleBlobDetector_Params()
+                    blobPar.maxArea = 1000
+                    blobPar.minArea = 20
+                    # blobPar.minDistBetweenBlobs = 300
+                    blobDet = cv2.SimpleBlobDetector_create(blobPar)
+
+                    # flags = cv2.CALIB_CB_SYMMETRIC_GRID + cv2.CALIB_CB_CLUSTERING)
+                    ret_l, corners_l = cv2.findCirclesGrid(gray_l, (marker_point_x, marker_point_y),
+                                                           flags=cv2.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
+                    ret_r, corners_r = cv2.findCirclesGrid(gray_r, (marker_point_x, marker_point_y),
+                                                           flags=cv2.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
+
+                print((images_left[i], ret_l))
+                print((images_right[i], ret_r))
+                # print("L",corners_l)
+                # print("R",corners_r)
+
+                if ret_l is True and ret_r is True:
+                    self.objpoints.append(self.objp)
+                    # self.objpoints_center.append(self.objp_center)
+
+                    if (select_detect_pattern == 1):
+                        rt = cv2.cornerSubPix(gray_l, corners_l, (11, 11), (-1, -1), self.criteria)
+                        rt = cv2.cornerSubPix(gray_r, corners_r, (11, 11), (-1, -1), self.criteria)
+                    self.imgpoints_l.append(corners_l)
+                    self.imgpoints_r.append(corners_r)
+
+                    if (enable_debug_detect_pattern_from_image == 1):
+                        # Draw and display the corners
+                        ret_l = cv2.drawChessboardCorners(img_l, (marker_point_x, marker_point_y), corners_l, ret_l)
+                        ret_r = cv2.drawChessboardCorners(img_r, (marker_point_x, marker_point_y), corners_r, ret_r)
+                        cv2.imshow(str(i + 1) + 'st image  _ ' + images_left[i], img_l)
+                        cv2.waitKey(500)
+                        cv2.imshow(str(i + 1) + 'st image  _ ' + images_right[i], img_r)
+                        cv2.waitKey(0)
+                # img_shape = gray_r.shape[::-1]
+
+        if(cal_loadpoint != None):
+            cal_path = cal_loadpoint
+            print_current_time(cal_path, "/log.txt")
+
+            loadpoint = glob.glob(cal_loadpoint + '/' + '[!dr]*.csv')
+            # [!distance_from_img|!rectify_from_img]    [!dr]
+            print(loadpoint)
+            for i, fname in enumerate(loadpoint):
+                print(i+1, 'st point loaded')
+                ref_point, img_point_l, img_point_r = load_point_from_csv(fname)
+
+                self.objpoints.append(ref_point)
+                # self.objpoints.append(self.objp_center)
+                self.imgpoints_l.append(img_point_l)
+                self.imgpoints_r.append(img_point_r)
 
         m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res = load_value_from_json(
             cal_loadjson)
@@ -1195,7 +1290,7 @@ class StereoCalibration(object):
         ret_rp = stero_rms
         tE = tF = np.eye(3)
         # modify_value_from_json_from_plus_to_minus_focal(self.cal_path, "stereo_config",self.M1, self.d1, self.M2, self.d2, c_Rt_w[0:3, 0:3], c_Rt_w[0:3, 3], img_shape, ret_rp, tE, tF)
-        # modify_value_from_json(self.cal_path, "stereo_config", camera_matrix_l, dist_coef_l, camera_matrix_r, dist_coef_r, uR33, uT, img_shape, ret_rp, tE, tF)
+        # modify_value_from_json(self.cal_path, "rmse", camera_matrix_l, dist_coef_l, camera_matrix_r, dist_coef_r, uR33, uT, img_shape, ret_rp, tE, tF)
 
         if (enable_debug_dispatiry_estimation_display == 1 or enable_debug_dispatiry_estimation_display == 2):
             self.mapL1, self.mapL2, self.mapR1, self.mapR2, _, _, _, _ = self.stereo_rectify_with_points(img_shape,
@@ -1214,7 +1309,7 @@ class StereoCalibration(object):
         print("END - calc_rms_about_stereo")
 
     # input - all point, output - json, func- mono and stereo calib
-    def read_points_with_mono_stereo(self, cal_path, cal_loadjson=None, cal_loadpoint=None):
+    def read_points_with_mono_stereo(self, cal_path, cal_loadjson=None, cal_loadpoint=None, opt1=None, opt2=None):
         print_current_time(cal_path, "/log.txt")
 
         if(cal_loadpoint == None):
@@ -1233,27 +1328,21 @@ class StereoCalibration(object):
             self.imgpoints_r.append(img_point_r)
 
         print("//////read_points_with_mono_stereo/////////")
-        flags = 0
-        # flags |= cv2.CALIB_FIX_INTRINSIC
-        # flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
-        flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-        # flags |= cv2.CALIB_FIX_FOCAL_LENGTH
-        flags |= cv2.CALIB_FIX_ASPECT_RATIO
-        flags |= cv2.CALIB_ZERO_TANGENT_DIST
-        # flags |= cv2.CALIB_RATIONAL_MODEL
-        # flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-        flags |= cv2.CALIB_FIX_K3
-        flags |= cv2.CALIB_FIX_K4
-        flags |= cv2.CALIB_FIX_K5
-
-        # m_fx = m_fy = s_fx = s_fy = default_camera_param_f
-        # m_cx = s_cx = default_camera_param_cx
-        # m_cy = s_cy = default_camera_param_cy
-        # m_k1 = s_k1 = default_camera_param_k1
-        # m_k2 = s_k2 = default_camera_param_k2
-        # m_k3 = s_k3 = default_camera_param_k3
-        # m_k4 = s_k4 = default_camera_param_k4
-        # m_k5 = s_k5 = default_camera_param_k5
+        if(opt1 != None):
+            flags = opt1
+        else:
+            flags = 0
+            # tflags |= cv2.CALIB_FIX_INTRINSIC
+            # tflags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+            flags |= cv2.CALIB_USE_INTRINSIC_GUESS
+            # tflags |= cv2.CALIB_FIX_FOCAL_LENGTH
+            flags |= cv2.CALIB_FIX_ASPECT_RATIO
+            flags |= cv2.CALIB_ZERO_TANGENT_DIST
+            # tflags |= cv2.CALIB_RATIONAL_MODEL
+            # tflags |= cv2.CALIB_SAME_FOCAL_LENGTH
+            flags |= cv2.CALIB_FIX_K3
+            flags |= cv2.CALIB_FIX_K4
+            flags |= cv2.CALIB_FIX_K5
 
         if(cal_loadjson != None):
             m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res \
@@ -1310,10 +1399,8 @@ class StereoCalibration(object):
 
         # single_rms_l, _, _ = self.reprojection_error2(self.objpoints, self.imgpoints_l, camera_matrix_l, dist_coef_l)
 
-        rt, self.M1, self.d1, self.r1, self.t1 = cv2.calibrateCamera(self.objpoints, self.imgpoints_l, img_shape,
-                                                                     camera_matrix_l, dist_coef_l, flags=flags)
-        rt2, self.M2, self.d2, self.r2, self.t2 = cv2.calibrateCamera(self.objpoints, self.imgpoints_r, img_shape,
-                                                                      camera_matrix_r, dist_coef_r, flags=flags)
+        rt, self.M1, self.d1, self.r1, self.t1 = cv2.calibrateCamera(self.objpoints, self.imgpoints_l, img_shape, camera_matrix_l, dist_coef_l, flags=flags)
+        rt2, self.M2, self.d2, self.r2, self.t2 = cv2.calibrateCamera(self.objpoints, self.imgpoints_r, img_shape, camera_matrix_r, dist_coef_r, flags=flags)
 
         print("=" * 50)
         print('Mono_Intrinsic_Left', *np.round(self.M1, 5), sep='\n')
@@ -1337,18 +1424,21 @@ class StereoCalibration(object):
 
         print("=" * 50)
 
-        self.stereo_flags = 0
-        # self.stereo_flags |= cv2.CALIB_FIX_INTRINSIC
-        # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
-        self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-        # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
-        self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
-        self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
-        # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
-        # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-        self.stereo_flags |= cv2.CALIB_FIX_K3
-        self.stereo_flags |= cv2.CALIB_FIX_K4
-        self.stereo_flags |= cv2.CALIB_FIX_K5
+        if(opt2 != None):
+            self.stereo_flags = opt2
+        else:
+            self.stereo_flags = 0
+            # self.stereo_flags |= cv2.CALIB_FIX_INTRINSIC
+            # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+            self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
+            # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
+            self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
+            self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
+            # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
+            # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
+            self.stereo_flags |= cv2.CALIB_FIX_K3
+            self.stereo_flags |= cv2.CALIB_FIX_K4
+            self.stereo_flags |= cv2.CALIB_FIX_K5
 
         self.camera_model = self.stereo_camera_calibrate(img_shape)
 
@@ -1373,7 +1463,7 @@ class StereoCalibration(object):
 
 
     # input - all point, output - json, func- stereo calib
-    def read_points_with_stereo(self, cal_path, cal_loadjson=None, cal_loadpoint=None):
+    def read_points_with_stereo(self, cal_path, cal_loadjson=None, cal_loadpoint=None, opt2=None):
         print_current_time(cal_path, "/log.txt")
 
         if(cal_loadpoint == None):
@@ -1389,19 +1479,6 @@ class StereoCalibration(object):
             self.objpoints.append(ref_point)
             self.imgpoints_l.append(img_point_l)
             self.imgpoints_r.append(img_point_r)
-
-        # flags = 0
-        # #flags |= cv2.CALIB_FIX_INTRINSIC
-        # # flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
-        # flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-        # #flags |= cv2.CALIB_FIX_FOCAL_LENGTH
-        # flags |= cv2.CALIB_FIX_ASPECT_RATIO
-        # flags |= cv2.CALIB_ZERO_TANGENT_DIST
-        # # flags |= cv2.CALIB_RATIONAL_MODEL
-        # #flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-        # flags |= cv2.CALIB_FIX_K3
-        # flags |= cv2.CALIB_FIX_K4
-        # flags |= cv2.CALIB_FIX_K5
 
         if(cal_loadjson != None):
             m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res \
@@ -1466,18 +1543,21 @@ class StereoCalibration(object):
         print('distort_Right', np.round(self.d2, 4))
         print("=" * 50)
 
-        self.stereo_flags = 0
-        # self.stereo_flags |= cv2.CALIB_FIX_INTRINSIC
-        # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
-        self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-        # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
-        self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
-        self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
-        # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
-        # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-        self.stereo_flags |= cv2.CALIB_FIX_K3
-        self.stereo_flags |= cv2.CALIB_FIX_K4
-        self.stereo_flags |= cv2.CALIB_FIX_K5
+        if(opt2 != None):
+            self.stereo_flags = opt2
+        else:
+            self.stereo_flags = 0
+            # self.stereo_flags |= cv2.CALIB_FIX_INTRINSIC
+            # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+            self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
+            # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
+            self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
+            self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
+            # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
+            # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
+            self.stereo_flags |= cv2.CALIB_FIX_K3
+            self.stereo_flags |= cv2.CALIB_FIX_K4
+            self.stereo_flags |= cv2.CALIB_FIX_K5
 
         self.camera_model = self.stereo_camera_calibrate(img_shape)
 
@@ -1496,7 +1576,7 @@ class StereoCalibration(object):
         pass
 
     # input - one image and json, output - json, func- stereo calib
-    def read_param_and_images_with_stereo(self, cal_path, cal_loadjson):
+    def read_param_and_images_with_stereo(self, cal_path, cal_loadjson, opt2=None):
         print_current_time(cal_path, "/log.txt")
 
         print("/////////read_param_and_images_with_stereo////////////")
@@ -1608,19 +1688,6 @@ class StereoCalibration(object):
         save_coordinate_both_stereo_obj_img(cal_path, self.objpoints, self.imgpoints_l, self.imgpoints_r,
                                             count_ok_dual)
 
-        # flags = 0
-        # #flags |= cv2.CALIB_FIX_INTRINSIC
-        # # flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
-        # flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-        # #flags |= cv2.CALIB_FIX_FOCAL_LENGTH
-        # flags |= cv2.CALIB_FIX_ASPECT_RATIO
-        # flags |= cv2.CALIB_ZERO_TANGENT_DIST
-        # # flags |= cv2.CALIB_RATIONAL_MODEL
-        # #flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-        # flags |= cv2.CALIB_FIX_K3
-        # flags |= cv2.CALIB_FIX_K4
-        # flags |= cv2.CALIB_FIX_K5
-
         m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res \
             = load_value_from_json(cal_loadjson)
 
@@ -1671,18 +1738,21 @@ class StereoCalibration(object):
         # print('distort_right', np.round(self.d2, 4))
         # print("")
 
-        self.stereo_flags = 0
-        # self.stereo_flags |= cv2.CALIB_FIX_INTRINSIC
-        # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
-        self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-        # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
-        self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
-        self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
-        # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
-        # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-        self.stereo_flags |= cv2.CALIB_FIX_K3
-        self.stereo_flags |= cv2.CALIB_FIX_K4
-        self.stereo_flags |= cv2.CALIB_FIX_K5
+        if(opt2 != None):
+            self.stereo_flags = opt2
+        else:
+            self.stereo_flags = 0
+            # self.stereo_flags |= cv2.CALIB_FIX_INTRINSIC
+            # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+            self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
+            # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
+            self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
+            self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
+            # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
+            # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
+            self.stereo_flags |= cv2.CALIB_FIX_K3
+            self.stereo_flags |= cv2.CALIB_FIX_K4
+            self.stereo_flags |= cv2.CALIB_FIX_K5
 
         self.camera_model = self.stereo_camera_calibrate(img_shape)
         # print(self.camera_model)
@@ -1711,7 +1781,7 @@ class StereoCalibration(object):
         pass
 
     # input - all image, output - json, func- mono and stereo calib
-    def read_images_with_mono_stereo(self, cal_path):
+    def read_images_with_mono_stereo(self, cal_path, opt1=None, opt2=None):
         print_current_time(cal_path, "/log.txt")
 
         count_ok_dual = 0
@@ -1823,18 +1893,21 @@ class StereoCalibration(object):
         save_coordinate_both_stereo_obj_img(cal_path, self.objpoints, self.imgpoints_l, self.imgpoints_r,
                                             count_ok_dual)
 
-        flags = 0
-        # flags |= cv2.CALIB_FIX_INTRINSIC
-        # flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
-        flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-        # flags |= cv2.CALIB_FIX_FOCAL_LENGTH
-        flags |= cv2.CALIB_FIX_ASPECT_RATIO
-        flags |= cv2.CALIB_ZERO_TANGENT_DIST
-        # flags |= cv2.CALIB_RATIONAL_MODEL
-        # flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-        flags |= cv2.CALIB_FIX_K3
-        flags |= cv2.CALIB_FIX_K4
-        flags |= cv2.CALIB_FIX_K5
+        if(opt1 != None):
+            flags = opt1
+        else:
+            flags = 0
+            # tflags |= cv2.CALIB_FIX_INTRINSIC
+            # tflags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+            flags |= cv2.CALIB_USE_INTRINSIC_GUESS
+            # tflags |= cv2.CALIB_FIX_FOCAL_LENGTH
+            flags |= cv2.CALIB_FIX_ASPECT_RATIO
+            flags |= cv2.CALIB_ZERO_TANGENT_DIST
+            # tflags |= cv2.CALIB_RATIONAL_MODEL
+            # tflags |= cv2.CALIB_SAME_FOCAL_LENGTH
+            flags |= cv2.CALIB_FIX_K3
+            flags |= cv2.CALIB_FIX_K4
+            flags |= cv2.CALIB_FIX_K5
 
         # default param (if you need to change default param, please change this value)
         camera_matrix = np.zeros((3, 3), np.float32)
@@ -1896,18 +1969,22 @@ class StereoCalibration(object):
         temp_M2 = np.copy(self.M2)
         temp_d2 = np.copy(self.d2)
 
-        self.stereo_flags = 0
-        # self.stereo_flags |= cv2.CALIB_FIX_INTRINSIC
-        # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
-        self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-        # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
-        self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
-        self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
-        # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
-        # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-        self.stereo_flags |= cv2.CALIB_FIX_K3
-        self.stereo_flags |= cv2.CALIB_FIX_K4
-        self.stereo_flags |= cv2.CALIB_FIX_K5
+        if(opt2 != None):
+            self.stereo_flags = opt2
+        else:
+            self.stereo_flags = 0
+            # self.stereo_flags |= cv2.CALIB_FIX_INTRINSIC
+            # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+            self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
+            # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
+            self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
+            self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
+            # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
+            # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
+            self.stereo_flags |= cv2.CALIB_FIX_K3
+            self.stereo_flags |= cv2.CALIB_FIX_K4
+            self.stereo_flags |= cv2.CALIB_FIX_K5
+
 
         self.camera_model = self.stereo_camera_calibrate(img_shape)
         # print(self.camera_model)
@@ -3118,19 +3195,24 @@ class StereoCalibration(object):
 
             # if(i==0):
             _, rvec_l, tvec_l = cv2.solvePnP(obj_points[i], t_imgpoints_l, A1, D1, flags=cv2.SOLVEPNP_ITERATIVE)
-            _, rvec_r, tvec_r = cv2.solvePnP(obj_points[i], t_imgpoints_r, A2, D2, flags=cv2.SOLVEPNP_ITERATIVE)
+            # _, rvec_r, tvec_r = cv2.solvePnP(obj_points[i], t_imgpoints_r, A2, D2, flags=cv2.SOLVEPNP_ITERATIVE)
            # else:
             #     _, rvec_l, tvec_l = cv2.solvePnP(obj_points[i], t_imgpoints_l, A1, D1, flags=cv2.SOLVEPNP_ITERATIVE, rvec = rvec_l, tvec=tvec_l, useExtrinsicGuess=True)
-
+            pre_rvec_l = rvec_l
+            pre_tvec_l = tvec_l
             # print('\tR_L', rvec_l[0],rvec_l[1],rvec_l[2],'\n\tT_L', tvec_l[0],tvec_l[1],tvec_l[2])
             # flog.write('\tR_L [ %.8f, %.8f, %.8f]\n\tT_L [ %.8f, %.8f, %.8f]\n'%(rvec_l[0],rvec_l[1],rvec_l[2],tvec_l[0],tvec_l[1],tvec_l[2]))
 
             # compute target RT
-            x = np.zeros((12,1))
+            # x = np.zeros((12,1))
+            x = np.zeros((6,1))
             x[0:3] = rvec_l
             x[3:6] = tvec_l
+            x = x.reshape(6)
+            # x[6:9] = rvec_r
+            # x[9:12] = tvec_r
+            # x = x.reshape(12)
             # print(rvec_l, rvec_l.shape)
-            x = x.reshape(12)
             # # print('x\n', x)
             # # stereocalib_criteria = (cv2.TERM_CRITERIA_MAX_ITER +
             # #                         cv2.TERM_CRITERIA_EPS, 100, 1e-5)
@@ -3150,56 +3232,107 @@ class StereoCalibration(object):
             # rvec_l = res['x'][0:3]
             # tvec_l = res['x'][3:6]
 
-            # R_L[-0.00316219][0.18087475][-3.11587054]
-            # T_L[0.08029343][0.08267664][0.69034954]
-            # rvec_l = np.array([[0.00496157], [0.1163189],  [0.02075411]]) #-3.11924589
-            # tvec_l = np.array([[0.08033038], [0.08268106], [0.69000551]])
-            # rvec_l = np.array([[-3.13663108],[3.02527375],[0.02075411]])
-            # tvec_l = np.array([[0.08033038], [0.08268106], [0.69000551]])
 
             # num_try = 100
-            # rmse = 100
-            # x = np.zeros((6, 1))
-            # while num_try > 0 and rmse > 0.24:
+            # rmse = 1000
+            # pre_rmse = 10000
+            # x = np.zeros((12, 1))
+            # while num_try > 0 and rmse > 0.05:
             #     # inital target pose
             #     x[0:3] = rvec_l
             #     x[3:6] = tvec_l
-            #     x = x.reshape(6)
+            #     x[6:9] = rvec_r
+            #     x[9:12] = tvec_r
+            #     x = x.reshape(12)
             #
             #     # x = np.random.uniform(low=[-0.1, -0.2, 2.9, -0.2, 0.2, 0.5], high=[0.1, 0.2, 3.3, 0.2, 0.2, 1.0])
+            #     # x = np.random.uniform(low=[-0.1, -0.2, 2.9, -0.2, 0.2, 0.5,-0.1, -0.2, 2.9, -0.2, 0.2, 0.5], high=[0.1, 0.2, 3.3, 0.2, 0.2, 1.0,0.1, 0.2, 3.3, 0.2, 0.2, 1.0])
             #     # optimal target pose computation
-            #     res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse, x0=x, xtol=1e-10, gtol=1e-10,
-            #                                        x_scale=0.1,  # ftol=1e-2, gtol =1e-2 ,
+            #     res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse, x0=x, xtol=1e-15,
+            #                                        max_nfev=300, # ftol=1e-2, gtol =1e-2 ,
             #                                        args=(obj_points[i], t_imgpoints_l, t_imgpoints_r, A1, D1, A2, D2, R, T))
+            #
             #     if res['success'] == False:
             #         pass
             #
             #     rmse = res['fun']
-            #     print('rmse_end', rmse)
+            #     if(pre_rmse == rmse):
+            #         break
+            #     else:
+            #         pre_rmse = rmse
+            #     # print('rmse_end', rmse, 'cnt ',num_try)
             #     num_try -= 1
             #
             #     rvec_l = res['x'][0:3]
             #     tvec_l = res['x'][3:6]
+            #     rvec_r = res['x'][6:9]
+            #     tvec_r = res['x'][9:12]
+
+            ta = np.linspace(x[0]-0.002, x[0]+0.002, num=2)
+            tb = np.linspace(x[1]-0.002, x[1]+0.002, num=2)
+            tc = np.linspace(x[2]-0.002, x[2]+0.002, num=2)
+            td = np.linspace(x[3]-0.005, x[3]+0.005, num=2)
+            te = np.linspace(x[4]-0.005, x[4]+0.005, num=2)
+            tf = np.linspace(x[5]-0.005, x[5]+0.005, num=2)
+
+            min_rmse = 1000
+            num_try = 0
+            # for ta_cnt in range(0,len(ta),1):
+            #     for tb_cnt in range(0, len(tb), 1):
+            #         for tc_cnt in range(0, len(tc), 1):
+            for td_cnt in range(0, len(td), 1):
+                            for te_cnt in range(0, len(te), 1):
+                                for tf_cnt in range(0, len(tf), 1):
+                                    # x[0] = ta[ta_cnt]
+                                    # x[1] = tb[tb_cnt]
+                                    # x[2] = tc[tc_cnt]
+                                    x[3] = td[td_cnt]
+                                    x[4] = te[te_cnt]
+                                    x[5] = tf[tf_cnt]
+
+                                    res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse, x0=x,
+                                                                       args=(obj_points[i], t_imgpoints_l, t_imgpoints_r, A1, D1, A2, D2, R, T))
+                                    # print('rmse_end ', res['fun'], 'cnt ',num_try)
+                                    num_try = num_try + 1
+                                    if(min_rmse > res['fun']):
+                                        min_rmse = res['fun']
+                                        min_array = res['x']
+            # print('min_rmse', min_rmse, 'min_array',min_array)
 
             x[0:3] = rvec_l.reshape(3)
             x[3:6] = tvec_l.reshape(3)
-            x[6:9] = rvec_r.reshape(3)
-            x[9:12] = tvec_r.reshape(3)
+            # x[6:9] = rvec_r.reshape(3)
+            # x[9:12] = tvec_r.reshape(3)
+            #
+            # x[0] = min_array[0]
+            # x[1] = min_array[1]
+            # x[2] = min_array[2]
+            # x[3] = min_array[3]
+            # x[4] = min_array[4]
+            # x[5] = min_array[5]
 
-            res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse, x0=x, xtol=1e-10, gtol=1e-10, x_scale= 0.1, #ftol=1e-2, gtol =1e-2 ,
+            res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse, x0=x, max_nfev=200,
                                                args=(obj_points[i], t_imgpoints_l, t_imgpoints_r, A1, D1, A2, D2, R, T))
+            # res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse3, x0=x, max_nfev=200,
+            #                                    args=(R, T))
+
             # print(res)
-            if res['success'] == False:
-                print('Failed minimization')
-                return np.nan
+            # if res['success'] == False:
+            #     print('Failed minimization')
+            #     return np.nan
 
             # print('res', res['x'])
             # print(x)
             rvec_l = res['x'][0:3]
             tvec_l = res['x'][3:6]
+            # rvec_r = res['x'][6:9]
+            # tvec_r = res['x'][9:12]
 
-            print('\tret_R_L', rvec_l[0], rvec_l[1], rvec_l[2], '\n\tret_T_L', tvec_l[0], tvec_l[1], tvec_l[2])
+            print('\tret_R_L [ %.8f, %.8f, %.8f]\n\tret_T_L [ %.8f, %.8f, %.8f]' % (rvec_l[0], rvec_l[1], rvec_l[2], tvec_l[0], tvec_l[1], tvec_l[2]))
             flog.write('\tret_R_L [ %.8f, %.8f, %.8f]\n\tret_T_L [ %.8f, %.8f, %.8f]\n' % (rvec_l[0], rvec_l[1], rvec_l[2], tvec_l[0], tvec_l[1], tvec_l[2]))
+
+            # print('\tsub_R_L [ %.8f, %.8f, %.8f]\n\tsub_T_L [ %.8f, %.8f, %.8f]\n'
+            #       % (rvec_l[0]-pre_rvec_l[0], rvec_l[1]-pre_rvec_l[1], rvec_l[2]-pre_rvec_l[2], tvec_l[0]-pre_tvec_l[0], tvec_l[1]-pre_tvec_l[1], tvec_l[2]-pre_tvec_l[2]))
 
             rp_l, _ = cv2.projectPoints(obj_points[i], rvec_l.reshape(3,1), tvec_l.reshape(3,1), A1, D1)
             # print( 'rp_l' , rp_l )

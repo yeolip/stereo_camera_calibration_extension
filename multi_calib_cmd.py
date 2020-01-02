@@ -14,6 +14,39 @@ import datetime as dt
 #import scipy.optimize
 import camera_calibrate_input_rms as stereoCalib
 
+C_FIX_INTRINSIC = 256
+C_FIX_PRINCIPAL_POINT = 4
+C_USE_INTRINSIC_GUESS = 1
+C_FIX_FOCAL_LENGTH = 16
+C_FIX_ASPECT_RATIO = 2
+C_ZERO_TANGENT_DIST = 8
+C_RATIONAL_MODEL = 16384
+C_SAME_FOCAL_LENGTH = 512
+C_FIX_K1 = 32
+C_FIX_K2 = 64
+C_FIX_K3 = 128
+C_FIX_K4 = 2048
+C_FIX_K5 = 4096
+C_FIX_K6 = 8192
+C_USE_EXTRINSIC_GUESS = 4194304
+
+
+def user_calib_option(ttype):
+    tflag = 0
+    if(ttype == 'BAGIC'):
+        tflag = C_USE_INTRINSIC_GUESS|C_FIX_ASPECT_RATIO|C_ZERO_TANGENT_DIST|C_FIX_K3|C_FIX_K4|C_FIX_K5
+    elif(ttype == 'GUESS'):
+        tflag = C_USE_INTRINSIC_GUESS
+    elif (ttype == 'FIX'):
+        tflag = C_FIX_INTRINSIC
+    elif (ttype == 'USER1'):
+        tflag = C_USE_INTRINSIC_GUESS|C_ZERO_TANGENT_DIST
+    elif (ttype == 'USER2'):
+        tflag = C_USE_INTRINSIC_GUESS|C_FIX_FOCAL_LENGTH|C_FIX_ASPECT_RATIO|C_ZERO_TANGENT_DIST|C_FIX_K3|C_FIX_K4|C_FIX_K5
+
+    return tflag
+
+
 class SearchManager(object):
     def __del__(self):
         print("*************delete SearchManager class***********\n")
@@ -84,11 +117,10 @@ class SearchManager(object):
             objCal = stereoCalib.StereoCalibration("Manual")
             if (args.path_point != None and args.path_json != None ):
                 objCal.initialize(args.path_point)
-                objCal.calc_rms_about_stereo(args.path_point, args.path_json, None)
-            # currently, not support for calculating Rp from image
-            # elif (args.path_img != None):
-            #     objCal.initialize(args.path_img)
-            #     self.calc_rms_about_stereo(args.path_img, args.path_json, None)
+                objCal.calc_rms_about_stereo(None, args.path_json, args.path_point)
+            elif (args.path_img != None):
+                objCal.initialize(args.path_img)
+                objCal.calc_rms_about_stereo(None, args.path_json, None, args.path_img)
         else:
             print("action is wrong. value = ", args.action)
         return
@@ -121,7 +153,10 @@ class SearchManager(object):
                         print('\n###### ', tnum + 1, 'st#################')
                         print("\nPOINT ", tpath)
                         objCal.initialize(tpath)
-                        objCal.read_points_with_mono_stereo(tpath, None , None)
+                        # print(user_calib_option('GUESS'))
+                        objCal.read_points_with_mono_stereo(tpath, None, None)
+                        # objCal.read_points_with_mono_stereo(tpath, None, None, opt1=user_calib_option('GUESS'), opt2=user_calib_option('GUESS'))
+
 
             elif(args.action == 2):
                 print("2) recalibration (action is %d)\n"%(args.action))
@@ -141,7 +176,6 @@ class SearchManager(object):
                             objCal.read_points_with_stereo(tpath, args.path_json, None)
                             #please check intrinsic flag (GUESS or FIX)
                 else:
-                    print("special 처리 필요 - auto load json\n")
                     tlist_images_with_json , tlist_points_with_json = self.extract_available_calib_data(tlist_of_images, tlist_of_points)
                     for tnum, tlist_data in enumerate(tlist_images_with_json):
                         print('\n###### ', tnum+1, 'st#################')
@@ -154,7 +188,6 @@ class SearchManager(object):
                         objCal.initialize(tlist_data[0])
                         # objCal.read_points_with_mono_stereo(tlist_data[0], tlist_data[1], None)
                         objCal.read_points_with_stereo(tlist_data[0], tlist_data[1], None)
-
 
                     # print('\ntlist_of_points_with_json len=', len(tlist_points_with_json))
                     for tnum, tlist_data in enumerate(tlist_points_with_json):
@@ -171,26 +204,27 @@ class SearchManager(object):
                             print('\n###### ', tnum + 1, 'st#################')
                             print("\nPOINT ", tpath)
                             objCal.initialize(tpath)
-                            objCal.calc_rms_about_stereo(tpath, args.path_json, None)
-                    # currently, not support for calculating Rp from image
-                    # elif (args.path_img != None):
-                    #     objCal.initialize(args.path_img)
-                    #     self.calc_rms_about_stereo(args.path_img, args.path_json, None)
+                            objCal.calc_rms_about_stereo(None, args.path_json, tpath)
+                    elif (args.path_img != None and len(tlist_of_images) >= 1):
+                        for tnum, tpath in enumerate(tlist_of_images):
+                            print('\n###### ', tnum + 1, 'st#################')
+                            print("\nIMAGE ", tpath)
+                            objCal.initialize(tpath)
+                            objCal.calc_rms_about_stereo(None, args.path_json, None, tpath)
                 else:
                     tlist_images_with_json , tlist_points_with_json = self.extract_available_calib_data(tlist_of_images, tlist_of_points)
-                    # currently, not support for calculating Rp from image
-                    # print('\ntlist_images_with_json len=', len(tlist_images_with_json))
-                    # for timage_addr, tjson_addr in tlist_images_with_json:
-                    #     print("\nIMAGE ", timage_addr, '\n,JSON ', tjson_addr)
-                    #     objCal.initialize(tpath)
-                    #     objCal.calc_rms_about_stereo(timage_addr, tjson_addr, None)
+                    for tnum, tlist_data in enumerate(tlist_images_with_json):
+                        print('\n###### ', tnum+1, 'st#################')
+                        print("\nIMAGE ", tlist_data[0], '\n,JSON ',  tlist_data[1])
+                        objCal.initialize(tlist_data[0])
+                        objCal.calc_rms_about_stereo(None, tlist_data[1], None, tlist_data[0])
 
-                    # print('\ntlist_of_points_with_json len=', len(tlist_points_with_json))
                     for tnum, tlist_data in enumerate(tlist_points_with_json):
                         print('\n###### ', tnum+1, 'st#################')
                         print("\nPOINT ", tlist_data[0], '\n,JSON ',  tlist_data[1])
                         objCal.initialize(tlist_data[0])
-                        objCal.calc_rms_about_stereo(tlist_data[0], tlist_data[1], None)
+                        objCal.calc_rms_about_stereo(None, tlist_data[1], tlist_data[0])
+
 
         else:
             return False
@@ -356,7 +390,7 @@ if __name__ == '__main__':
     # tpath = "D:\Project\HET\calibration\python_stereo\input_sm"
     # tjson = "D:/Project/HET/calibration/python_stereo/input_sm/stereo_config.json"
     # objCal.initialize(tpath)
-    # objCal.calc_rms_about_stereo(tpath, tjson, None)
+    # objCal.calc_rms_about_stereo(None, tjson, tpath)
     # objCal.read_points_with_mono_stereo(tpath, None, None)
 
 
