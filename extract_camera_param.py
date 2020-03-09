@@ -199,7 +199,7 @@ def load_json_to_table(filename, filenum):
   # 'Ext_RotX','Ext_RotY','Ext_RotZ','Ext_TransX','Ext_TransY','Ext_TransZ','RMS_Stereo']
   col = ['Path' , 'M_imageX','M_imageY','M_focalX','M_focalY','M_k1','M_k2','M_p1','M_p2','M_k3','M_principalX','M_principalY','M_skew',
   'S_imageX','S_imageY','S_focalX','S_focalY','S_k1','S_k2','M_p1','M_p2','M_k3','S_principalX','S_principalY','S_skew',
-  'Ext_RotX','Ext_RotY','Ext_RotZ','Ext_TransX','Ext_TransY','Ext_TransZ','RMS_Stereo']
+  'Ext_TransX','Ext_TransY','Ext_TransZ','Ext_RotX','Ext_RotY','Ext_RotZ','RMS_Stereo']
 
   output = pd.DataFrame(wantedList, index=col, columns=['param'+str(filenum)])
   output =output.T
