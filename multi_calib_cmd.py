@@ -42,7 +42,9 @@ def user_calib_option(ttype):
     elif (ttype == 'USER1'):
         tflag = C_USE_INTRINSIC_GUESS|C_ZERO_TANGENT_DIST
     elif (ttype == 'USER2'):
-        tflag = C_USE_INTRINSIC_GUESS|C_FIX_FOCAL_LENGTH|C_FIX_ASPECT_RATIO|C_ZERO_TANGENT_DIST|C_FIX_K3|C_FIX_K4|C_FIX_K5
+        tflag = C_USE_INTRINSIC_GUESS|C_SAME_FOCAL_LENGTH|C_FIX_FOCAL_LENGTH|C_FIX_ASPECT_RATIO|C_ZERO_TANGENT_DIST|C_FIX_K3|C_FIX_K4|C_FIX_K5
+    elif (ttype == 'USER3'):
+        tflag = C_USE_INTRINSIC_GUESS|C_FIX_ASPECT_RATIO|C_FIX_K3|C_FIX_K4|C_FIX_K5
 
     return tflag
 
@@ -96,8 +98,10 @@ class SearchManager(object):
             elif (args.path_point != None):
                 print("\nPOINT ", args.path_point)
                 objCal.initialize(args.path_point)
-                objCal.read_points_with_mono_stereo(args.path_point, None , None)
+                objCal.read_points_with_mono_stereo(args.path_point, None, None, opt1=user_calib_option('BAGIC'), opt2=user_calib_option('BAGIC'))
+                # objCal.read_points_with_mono_stereo(args.path_point, None , None)
                 # objCal.read_points_with_stereo(args.path_point, None, None)
+
 
         elif(args.action == 2):
             print("2) recalibration (action is %d)\n"%(args.action))
@@ -167,6 +171,7 @@ class SearchManager(object):
                             print("\nIMAGE ", tpath)
                             objCal.initialize(tpath)
                             objCal.read_param_and_images_with_stereo(tpath, args.path_json)
+                            # objCal.read_param_and_images_with_stereo(tpath, args.path_json, opt2=user_calib_option('FIX'))
                     if (args.path_point != None and len(tlist_of_points) >= 1):
                         for tnum, tpath in enumerate(tlist_of_points):
                             print('\n###### ', tnum + 1, 'st#################')
@@ -181,21 +186,16 @@ class SearchManager(object):
                         print('\n###### ', tnum+1, 'st#################')
                         print("\nIMAGE ", tlist_data[0], '\n,JSON ',  tlist_data[1])
                         objCal.initialize(tlist_data[0])
-                        objCal.read_param_and_images_with_stereo(tlist_data[0], tlist_data[1])
+                        # objCal.read_param_and_images_with_stereo(tlist_data[0], tlist_data[1])
+                        objCal.read_param_and_images_with_stereo(tlist_data[0], tlist_data[1], opt2=user_calib_option('BAGIC'))
                     for tnum, tlist_data in enumerate(tlist_points_with_json):
                         print('\n###### ', tnum+1, 'st#################')
                         print("\nPOINT ", tlist_data[0], '\n,JSON ',  tlist_data[1])
                         objCal.initialize(tlist_data[0])
                         # objCal.read_points_with_mono_stereo(tlist_data[0], tlist_data[1], None)
-                        objCal.read_points_with_stereo(tlist_data[0], tlist_data[1], None)
+                        # objCal.read_points_with_stereo(tlist_data[0], tlist_data[1], None)
+                        objCal.read_points_with_stereo(tlist_data[0], tlist_data[1], None, opt2=user_calib_option('BAGIC'))
 
-                    # print('\ntlist_of_points_with_json len=', len(tlist_points_with_json))
-                    for tnum, tlist_data in enumerate(tlist_points_with_json):
-                        print('\n###### ', tnum+1, 'st#################')
-                        print("\nPOINT ", tlist_data[0], '\n,JSON ',  tlist_data[1])
-                        objCal.initialize(tlist_data[0])
-                        # objCal.read_points_with_mono_stereo(tlist_data[0], tlist_data[1], None)
-                        objCal.read_points_with_stereo(tlist_data[0], tlist_data[1], None)
             elif(args.action == 3):
                 print("3) calculation Reprojection error (action is %d)\n"%(args.action))
                 if (args.path_json != None ):
@@ -290,6 +290,10 @@ class SearchManager(object):
                     elif(os.path.exists(dirpath + '/L') and os.path.exists(dirpath + '/R')):
                         # print(dirpath)
                         list_of_images.append(os.path.join(dirpath)+'\\')
+                    # for filename in [f for f in filenames if f.endswith(".raw")]:
+                    #     list_of_images.append(os.path.abspath(dirpath))
+                        # print(filename)
+                        # break
             except OSError:
                 print("Can't change the Current Working Directory!")
 
