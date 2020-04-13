@@ -784,9 +784,6 @@ def least_squares_stereo_rmse3(x, R, T):
     return residuals
 
 def least_squares_stereo_rmse4(x, tobj_point, timgpoint_l, timgpoint_r, A1, D1, A2, D2, R, T):
-    tot_error = 0
-    total_points = 0
-
     rvec_l = x[0:3]
     tvec_l = x[3:6]
     rp_l, _ = cv2.projectPoints(tobj_point, rvec_l, tvec_l, A1, D1)
@@ -1203,7 +1200,7 @@ class StereoCalibration(object):
 
                 if ret_l is True and ret_r is True:
                     self.objpoints.append(self.objp)
-                    # self.objpoints_center.append(self.objp_center)
+                    # self.objpoints.append(self.objp_center)
 
                     if (select_detect_pattern == 1):
                         rt = cv2.cornerSubPix(gray_l, corners_l, (11, 11), (-1, -1), self.criteria)
@@ -1320,7 +1317,7 @@ class StereoCalibration(object):
         print('uR', uR, '\nuT', uT, '\nuR33', uR33, '\n')
 
         print("=" * 50)
-        stero_rms, re_left, re_right = self.calc_rms_stereo4(self.objpoints, self.imgpoints_l, self.imgpoints_r,
+        stero_rms, re_left, re_right = self.calc_rms_stereo6(self.objpoints, self.imgpoints_l, self.imgpoints_r,
                                                              camera_matrix_l, dist_coef_l, camera_matrix_r, dist_coef_r, uR33, uT)
         ret_rp = stero_rms
         tE = tF = np.eye(3)
@@ -1359,7 +1356,7 @@ class StereoCalibration(object):
             ref_point, img_point_l, img_point_r = load_point_from_csv(fname)
 
             self.objpoints.append(ref_point)
-            # self.objpoints_center.append(self.objp_center)
+            # self.objpoints.append(self.objp_center)
             self.imgpoints_l.append(img_point_l)
             self.imgpoints_r.append(img_point_r)
 
@@ -1448,6 +1445,12 @@ class StereoCalibration(object):
         print('T1 [%.8f, %.8f, %.8f]' % (self.t1[0][0], self.t1[0][1], self.t1[0][2]), sep='\n')
         print('R2 [%.8f, %.8f, %.8f]' % (self.r2[0][0], self.r2[0][1], self.r2[0][2]), sep='\n')
         print('T2 [%.8f, %.8f, %.8f]' % (self.t2[0][0], self.t2[0][1], self.t2[0][2]), sep='\n')
+        if(len(self.r1)>=2):
+            print(len(self.r1))
+            print('R1 [%.8f, %.8f, %.8f]' % (self.r1[1][0], self.r1[1][1], self.r1[1][2]), sep='\n')
+            print('T1 [%.8f, %.8f, %.8f]' % (self.t1[1][0], self.t1[1][1], self.t1[1][2]), sep='\n')
+            print('R2 [%.8f, %.8f, %.8f]' % (self.r2[1][0], self.r2[1][1], self.r2[1][2]), sep='\n')
+            print('T2 [%.8f, %.8f, %.8f]' % (self.t2[1][0], self.t2[1][1], self.t2[1][2]), sep='\n')
         print("=" * 50)
         single_rms_l, _, _  = self.reprojection_error(self.objpoints, self.imgpoints_l, self.r1, self.t1, self.M1, self.d1)
         single_rms_r, _, _  = self.reprojection_error(self.objpoints, self.imgpoints_r, self.r2, self.t2, self.M2, self.d2)
@@ -1623,6 +1626,8 @@ class StereoCalibration(object):
             print(cal_path + '/RIGHT/*.RAW')
             images_right = glob.glob(cal_path + '/R*/*.RAW')
             images_left = glob.glob(cal_path + '/L*/*.RAW')
+            # images_right = glob.glob(cal_path + '/*Left*.RAW')
+            # images_left = glob.glob(cal_path + '/*Right*.RAW')
         else:
             print(cal_path + '/RIGHT/*.JPG')
             images_right = glob.glob(cal_path + '/R*/*.JPG')
@@ -1981,6 +1986,12 @@ class StereoCalibration(object):
         print('T1 [%.8f, %.8f, %.8f]' % (self.t1[0][0], self.t1[0][1], self.t1[0][2]), sep='\n')
         print('R2 [%.8f, %.8f, %.8f]' % (self.r2[0][0], self.r2[0][1], self.r2[0][2]), sep='\n')
         print('T2 [%.8f, %.8f, %.8f]' % (self.t2[0][0], self.t2[0][1], self.t2[0][2]), sep='\n')
+        if(len(self.r1)>=2):
+            print(len(self.r1))
+            print('R1 [%.8f, %.8f, %.8f]' % (self.r1[1][0], self.r1[1][1], self.r1[1][2]), sep='\n')
+            print('T1 [%.8f, %.8f, %.8f]' % (self.t1[1][0], self.t1[1][1], self.t1[1][2]), sep='\n')
+            print('R2 [%.8f, %.8f, %.8f]' % (self.r2[1][0], self.r2[1][1], self.r2[1][2]), sep='\n')
+            print('T2 [%.8f, %.8f, %.8f]' % (self.t2[1][0], self.t2[1][1], self.t2[1][2]), sep='\n')
         print("=" * 50)
         print('RMSE_Left', rt)
         print('RMSE_Right', rt2)
@@ -3577,6 +3588,7 @@ class StereoCalibration(object):
             t_imgpoints_l = imgpoints_l[i].reshape(-1, 1, 2)
             t_imgpoints_r = imgpoints_r[i].reshape(-1, 1, 2)
 
+            # Left optimizer
             _, rvec_l, tvec_l = cv2.solvePnP(obj_points[i], t_imgpoints_l, A1, D1, flags=cv2.SOLVEPNP_ITERATIVE)
             _, rvec_r, tvec_r = cv2.solvePnP(obj_points[i], t_imgpoints_r, A2, D2, flags=cv2.SOLVEPNP_ITERATIVE)
 
@@ -3589,19 +3601,92 @@ class StereoCalibration(object):
             x[0:3] = rvec_l[0:3].reshape(3)
             x[3:6] = tvec_l[0:3].reshape(3)
 
-            #######################1
+            # Left and Right optimizer ###############################
+            num_try = 100
+            rmse = 1000
+            pre_rmse = 10000
+            while num_try > 0 and rmse > 0.05:
+                res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse, x0=x, xtol=1e-15,
+                                                   max_nfev=300,  # ftol=1e-2, gtol =1e-2 ,
+                                                   args=(obj_points[i], t_imgpoints_l, t_imgpoints_r, A1, D1, A2, D2,                                                       R, T))
+                rmse = res['fun']
+                if (pre_rmse == rmse):
+                    break
+                else:
+                    pre_rmse = rmse
+                # print('rmse_end', rmse, 'cnt ', num_try)
+                num_try -= 1
+
+                x[0:6] = res['x'][0:6].reshape(6)
+
+            # Sequencial mapping optimization################1
             # ta = np.linspace(x[0]-0.1, x[0]+0.1, num=11)
             # tb = np.linspace(x[1]-0.1, x[1]+0.1, num=10)
             # tc = np.linspace(x[2]-0.1, x[2]+0.1, num=10)
-            td = np.linspace(x[3]-0.02, x[3]+0.02, num=31)
-            te = np.linspace(x[4]-0.02, x[4]+0.02, num=11)
-            tf = np.linspace(x[5]-0.02, x[5]+0.02, num=5)
+            td = np.linspace(x[3] - 0.020, x[3] + 0.020, num=21)
+            te = np.linspace(x[4] - 0.015, x[4] + 0.015, num=11)
+            tf = np.linspace(x[5] - 0.015, x[5] + 0.015, num=5)
 
             min_rmse = 1000
             num_try = 0
             digit_pos = 3
             for cnt in range(0, len(td), 1):
                 x[digit_pos] = td[cnt]
+                res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse4, x0=x,
+                                                   args=(obj_points[i], t_imgpoints_l, t_imgpoints_r, A1, D1, A2, D2, R,T))
+                rvec_l = res['x'][0:3]
+                tvec_l = res['x'][3:6]
+                rp_l, _ = cv2.projectPoints(obj_points[i], rvec_l, tvec_l, A1, D1)
+                rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
+                rp_r, _ = cv2.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
+                temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(np.square(np.float64(rp_r - t_imgpoints_r)))
+                temp_points = 2 * len(obj_points[i])
+                temp_mean_error = np.sqrt(temp_error / temp_points)
+
+                # print('rmse_end ', temp_mean_error, 'cnt ', num_try, 'value',res['x'][digit_pos])
+                if (min_rmse > temp_mean_error):
+                    min_rmse = temp_mean_error
+                    min_array = res['x']
+                    min_num = num_try
+                num_try = num_try + 1
+            # print('\tmin_rmse', min_rmse, 'min_array', min_array)
+            print('\t\tmin_rmse', min_rmse, 'cnt', min_num)
+
+            x[0:6] = min_array[0:6]
+            #######################2
+            # min_rmse = 1000
+            num_try = 0
+            digit_pos = 4
+            for cnt in range(0, len(te), 1):
+                x[digit_pos] = te[cnt]
+                res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse4, x0=x,
+                                                   args=(obj_points[i], t_imgpoints_l, t_imgpoints_r, A1, D1, A2, D2, R, T))
+                rvec_l = res['x'][0:3]
+                tvec_l = res['x'][3:6]
+                rp_l, _ = cv2.projectPoints(obj_points[i], rvec_l, tvec_l, A1, D1)
+                rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
+                rp_r, _ = cv2.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
+                temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(
+                    np.square(np.float64(rp_r - t_imgpoints_r)))
+                temp_points = 2 * len(obj_points[i])
+                temp_mean_error = np.sqrt(temp_error / temp_points)
+
+                # print('rmse_end ', temp_mean_error, 'cnt ', num_try, 'value', res['x'][digit_pos])
+                if (min_rmse > temp_mean_error):
+                    min_rmse = temp_mean_error
+                    min_array = res['x']
+                    min_num = num_try
+                num_try = num_try + 1
+            # print('\tmin_rmse', min_rmse, 'min_array', min_array)
+            print('\t\tmin_rmse', min_rmse, 'cnt', min_num)
+
+            x[0:6] = min_array[0:6]
+            #######################3
+            # min_rmse = 1000
+            num_try = 0
+            digit_pos = 5
+            for cnt in range(0, len(tf), 1):
+                x[digit_pos] = tf[cnt]
                 res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse4, x0=x,
                                                    args=(obj_points[i], t_imgpoints_l, t_imgpoints_r, A1, D1, A2, D2, R, T))
 
@@ -3615,144 +3700,37 @@ class StereoCalibration(object):
                 temp_points = 2 * len(obj_points[i])
                 temp_mean_error = np.sqrt(temp_error / temp_points)
 
-                # print('rmse_end ', temp_mean_error, 'cnt ', num_try, 'value',res['x'][digit_pos])
-                num_try = num_try + 1
-                if (min_rmse > temp_mean_error):
-                    min_rmse = temp_mean_error
-                    min_array = res['x']
-            print('\tmin_rmse', min_rmse, 'min_array', min_array)
-
-            x[0:6] = min_array[0:6]
-            #######################2
-            # min_rmse = 1000
-            num_try = 0
-            digit_pos = 4
-            for cnt in range(0, len(te), 1):
-                x[digit_pos] = te[cnt]
-                res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse4, x0=x,
-                                                   args=(
-                                                   obj_points[i], t_imgpoints_l, t_imgpoints_r, A1, D1, A2, D2, R, T))
-
-                rvec_l = res['x'][0:3]
-                tvec_l = res['x'][3:6]
-                rp_l, _ = cv2.projectPoints(obj_points[i], rvec_l, tvec_l, A1, D1)
-                rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
-                rp_r, _ = cv2.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
-                temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(
-                    np.square(np.float64(rp_r - t_imgpoints_r)))
-                temp_points = 2 * len(obj_points[i])
-                temp_mean_error = np.sqrt(temp_error / temp_points)
-
                 # print('rmse_end ', temp_mean_error, 'cnt ', num_try, 'value', res['x'][digit_pos])
-                num_try = num_try + 1
                 if (min_rmse > temp_mean_error):
                     min_rmse = temp_mean_error
                     min_array = res['x']
-            print('\tmin_rmse', min_rmse, 'min_array', min_array)
-
-            x[0:6] = min_array[0:6]
-            #######################3
-            # min_rmse = 1000
-            num_try = 0
-            digit_pos = 5
-            for cnt in range(0, len(tf), 1):
-                x[digit_pos] = tf[cnt]
-                res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse4, x0=x,
-                                                   args=(
-                                                   obj_points[i], t_imgpoints_l, t_imgpoints_r, A1, D1, A2, D2, R, T))
-
-                rvec_l = res['x'][0:3]
-                tvec_l = res['x'][3:6]
-                rp_l, _ = cv2.projectPoints(obj_points[i], rvec_l, tvec_l, A1, D1)
-                rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
-                rp_r, _ = cv2.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
-                temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(
-                    np.square(np.float64(rp_r - t_imgpoints_r)))
-                temp_points = 2 * len(obj_points[i])
-                temp_mean_error = np.sqrt(temp_error / temp_points)
-
-                # print('rmse_end ', temp_mean_error, 'cnt ', num_try, 'value', res['x'][digit_pos])
+                    min_num = num_try
                 num_try = num_try + 1
-                if (min_rmse > temp_mean_error):
-                    min_rmse = temp_mean_error
-                    min_array = res['x']
-            print('\tmin_rmse', min_rmse, 'min_array', min_array)
-
-            x[0:6] = min_array[0:6]
-
-            #######################4
-            # num_try = 0
-            # digit_pos = 1
-            # for cnt in range(0, len(ta), 1):
-            #     x[digit_pos] = ta[cnt]
-            #     res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse4, x0=x,
-            #                                        args=(
-            #                                        obj_points[i], t_imgpoints_l, t_imgpoints_r, A1, D1, A2, D2, R, T))
-            #
-            #     rvec_l = res['x'][0:3]
-            #     tvec_l = res['x'][3:6]
-            #     rp_l, _ = cv2.projectPoints(obj_points[i], rvec_l, tvec_l, A1, D1)
-            #     rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
-            #     rp_r, _ = cv2.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
-            #     temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(
-            #         np.square(np.float64(rp_r - t_imgpoints_r)))
-            #     temp_points = 2 * len(obj_points[i])
-            #     temp_mean_error = np.sqrt(temp_error / temp_points)
-            #
-            #     # print('rmse_end ', temp_mean_error, 'cnt ', num_try, 'value', res['x'][digit_pos])
-            #     num_try = num_try + 1
-            #     if (min_rmse > temp_mean_error):
-            #         min_rmse = temp_mean_error
-            #         min_array = res['x']
             # print('\tmin_rmse', min_rmse, 'min_array', min_array)
-            #
-            # x[0:6] = min_array[0:6]
+            print('\t\tmin_rmse', min_rmse, 'cnt', min_num)
 
+            x[0:6] = min_array[0:6]
 
+            # Left and Right optimizer ###############################
+            num_try = 100
+            rmse = 1000
+            pre_rmse = 10000
+            while num_try > 0 and rmse > 0.05:
+                res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse, x0=x, xtol=1e-15,
+                                                   max_nfev=300,  # ftol=1e-2, gtol =1e-2 ,
+                                                   args=(obj_points[i], t_imgpoints_l, t_imgpoints_r, A1, D1, A2, D2,R, T))
+                rmse = res['fun']
+                if (pre_rmse == rmse):
+                    break
+                else:
+                    pre_rmse = rmse
+                # print('rmse_end', rmse, 'cnt ', num_try)
+                num_try -= 1
 
+                x[0:6] = res['x'][0:6].reshape(6)
+            print('\t\trmse_end2', res['fun'])
 
-
-            res['x'] = min_array[0:6]
-
-
-            # for td_cnt in range(0, len(td), 1):
-            #     for te_cnt in range(0, len(te), 1):
-            #         for tf_cnt in range(0, len(tf), 1):
-            #             # for ta_cnt in range(0,len(ta),1):
-            #             #     for tb_cnt in range(0, len(tb), 1):
-            #             #         for tc_cnt in range(0, len(tc), 1):
-            #             #             x[0] = ta[ta_cnt]
-            #             #             x[1] = tb[tb_cnt]
-            #             #             x[2] = tc[tc_cnt]
-            #                         x[3] = td[td_cnt]
-            #                         x[4] = te[te_cnt]
-            #                         x[5] = tf[tf_cnt]
-            #
-            #                         res = scipy.optimize.least_squares(fun=least_squares_stereo_rmse4, x0=x,
-            #                                                            args=(obj_points[i], t_imgpoints_l, t_imgpoints_r, A1, D1, A2, D2, R, T))
-            #
-            #                         rvec_l = res['x'][0:3]
-            #                         tvec_l = res['x'][3:6]
-            #                         rp_l, _ = cv2.projectPoints(obj_points[i], rvec_l, tvec_l, A1, D1)
-            #                         rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
-            #                         rp_r, _ = cv2.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
-            #                         temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(np.square(np.float64(rp_r - t_imgpoints_r)))
-            #                         temp_points = 2 * len(obj_points[i])
-            #                         temp_mean_error = np.sqrt(temp_error / temp_points)
-            #
-            #
-            #                         print('rmse_end ', temp_mean_error, 'cnt ',num_try)
-            #                         # print('rmse_end ', res['fun'], 'cnt ', num_try)
-            #
-            #                         num_try = num_try + 1
-            #                         if(min_rmse > temp_mean_error):
-            #                             min_rmse = temp_mean_error
-            #                             min_array = res['x']
-            # print('\nmin_rmse', min_rmse, 'min_array',min_array)
-            # x[0:6] = min_array[0:6]
-            # rvec_l = min_array[0:3]
-            # tvec_l = min_array[3:6]
-
+            # calc stereo RMSE #######################################
             rvec_l = res['x'][0:3]
             tvec_l = res['x'][3:6]
 
@@ -3766,10 +3744,12 @@ class StereoCalibration(object):
             uT_inv = t_mat_inv[0:3, 3]
 
             rvec_ext, tvec__ext = cv2.composeRT(uR33_inv, uT_inv, rvec_r, tvec_r)[:2]
-            print('\tret_ExtR [ %.8f, %.8f, %.8f] (radian)\n\tret_ExtT [ %.8f, %.8f, %.8f] (L->R)' % (
-                rvec_ext[0], rvec_ext[1], rvec_ext[2], tvec__ext[0], tvec__ext[1], tvec__ext[2]))
-            flog.write('\tret_ExtR [ %.8f, %.8f, %.8f] (radian)\n\tret_ExtT [ %.8f, %.8f, %.8f] (L->R)' % (
-                rvec_ext[0], rvec_ext[1], rvec_ext[2], tvec__ext[0], tvec__ext[1], tvec__ext[2]))
+
+            if (tLog == True):
+                print('\tret_ExtR [ %.8f, %.8f, %.8f] (radian)\n\tret_ExtT [ %.8f, %.8f, %.8f] (L->R)' % (
+                    rvec_ext[0], rvec_ext[1], rvec_ext[2], tvec__ext[0], tvec__ext[1], tvec__ext[2]))
+                flog.write('\tret_ExtR [ %.8f, %.8f, %.8f] (radian)\n\tret_ExtT [ %.8f, %.8f, %.8f] (L->R)' % (
+                    rvec_ext[0], rvec_ext[1], rvec_ext[2], tvec__ext[0], tvec__ext[1], tvec__ext[2]))
             ext_r += rvec_ext
             ext_t += tvec__ext
 
@@ -3790,15 +3770,14 @@ class StereoCalibration(object):
             tot_error += np.sum(np.square(np.float64(rp_r - t_imgpoints_r)))
             total_points += len(obj_points[i])
 
-            #temp_error = np.square(rp_r - t_imgpoints_r).sum() + np.square(rp_l - t_imgpoints_l).sum()
-            temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(np.square(np.float64(rp_r - t_imgpoints_r)))
+            # temp_error = np.square(rp_r - t_imgpoints_r).sum() + np.square(rp_l - t_imgpoints_l).sum()
+            temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(
+                np.square(np.float64(rp_r - t_imgpoints_r)))
             temp_points = 2 * len(obj_points[i])
             temp_mean_error = np.sqrt(temp_error / temp_points)
             if (tLog == True):
-                print('\tret_R_L [ %.8f, %.8f, %.8f]\n\tret_T_L [ %.8f, %.8f, %.8f]' % (
-                rvec_l[0], rvec_l[1], rvec_l[2], tvec_l[0], tvec_l[1], tvec_l[2]))
-                flog.write('\n\tret_R_L [ %.8f, %.8f, %.8f]\n\tret_T_L [ %.8f, %.8f, %.8f]\n' % (
-                rvec_l[0], rvec_l[1], rvec_l[2], tvec_l[0], tvec_l[1], tvec_l[2]))
+                print('\tret_R_L [ %.8f, %.8f, %.8f]\n\tret_T_L [ %.8f, %.8f, %.8f]' % (rvec_l[0], rvec_l[1], rvec_l[2], tvec_l[0], tvec_l[1], tvec_l[2]))
+                flog.write('\n\tret_R_L [ %.8f, %.8f, %.8f]\n\tret_T_L [ %.8f, %.8f, %.8f]\n' % (rvec_l[0], rvec_l[1], rvec_l[2], tvec_l[0], tvec_l[1], tvec_l[2]))
                 print(str(i + 1) + 'st %.8f' % temp_mean_error)
                 flog.write(str(i+1) + 'st %.8f\n'%temp_mean_error)
 
@@ -3815,9 +3794,11 @@ class StereoCalibration(object):
 
         if (tLog == True):
             print('\nAverage_ExtR [ %.8f, %.8f, %.8f] (radian)\nAverage_ExtT [ %.8f, %.8f, %.8f] (L->R)' % (
-                ext_r[0]/len(obj_points), ext_r[1]/len(obj_points), ext_r[2]/len(obj_points), ext_t[0]/len(obj_points), ext_t[1]/len(obj_points), ext_t[2]/len(obj_points)))
+                ext_r[0] / len(obj_points), ext_r[1] / len(obj_points), ext_r[2] / len(obj_points),
+                ext_t[0] / len(obj_points), ext_t[1] / len(obj_points), ext_t[2] / len(obj_points)))
             flog.write('\nAverage_ExtR [ %.8f, %.8f, %.8f] (radian)\nAverage_ExtT [ %.8f, %.8f, %.8f] (L->R)' % (
-                ext_r[0]/len(obj_points), ext_r[1]/len(obj_points), ext_r[2]/len(obj_points), ext_t[0]/len(obj_points), ext_t[1]/len(obj_points), ext_t[2]/len(obj_points)))
+                ext_r[0] / len(obj_points), ext_r[1] / len(obj_points), ext_r[2] / len(obj_points),
+                ext_t[0] / len(obj_points), ext_t[1] / len(obj_points), ext_t[2] / len(obj_points)))
             print("=" * 50)
             print('RMSE_Stereo verify ', mean_error)
             flog.write("\n")
@@ -3825,8 +3806,8 @@ class StereoCalibration(object):
             flog.write("\nRMSE_Stereo verify, %.9f\n" % mean_error)
             flog.write("=" * 50)
             flog.write("\n")
-            flog.close()
-            print("=" * 50)
+        flog.close()
+        print("=" * 50)
 
         return mean_error, p_reproj_left, p_reproj_right
 
