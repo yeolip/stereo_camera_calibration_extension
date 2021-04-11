@@ -1,84 +1,60 @@
-# stereo_camera_calibration
+# Stereo camera calibration extension
 
-Stereo camera calibration
+2018년도에 Stereo camera calibration의 생산 라인 카메라 셋업을 담당하게 되어, Stereo camera calibration의 성능 보장을 위한 다양한 검증을 위해, opencv 기반의 검사 툴을 만들어 사용하였다.
 
-this section is doing stereo camera calibration extention using opencv python. 
-나는 stereo camera calibration과 관련하여, 일반적인것 부터 확장성을 가지도록 설계 및 프로그램 하였다. 
-그리하여 이미지 패턴을 이용하여 카메라 켈리브레이션을 하는 것을 포함하여, 실제 켈리브레이션 된 데이터가 맞는지를 계산하여 검증해보았다.
-또한 다른 이미지 패턴으로 켈리브레이션 된 영상 및 좌표도 비교가 가능하여, 유효한 켈데이터인지를 검증해볼 수 있다.
-또한 계산된 켈데이터를 추가적으로 취득한 영상이나 점좌표로 더 피팅하여 그 상황에 맞는 값을 추론해 볼 수 있다.
-디버깅용으로 영상안에 인식된 마커점을 볼수 있거나 머커의 특정점(0,0,0)의 position을 계산한다거나 실제 점과 켈데이터에 따른 reprojection point점간의 상관관계도 출력해 볼 수 있다.
-켈레브레이션 파라메터의 focal length를 + 혹은 -로 변환해 볼수 있으며, left<->right간의 Extrinsic R,T를 변경해서 검토가능하도록 프로그래밍해 놓았다.
-그리고 마지막으로 두 점사이의 거리를 구할 수 있도록 해놓았다. 
+## Stereo camera calibration의 정의
 
+동일한 차트로 다양한 각도의 영상을 촬영하여, 두 카메라의 특성의 내부 파라메터와 외부 파라메터를 계산하기 위한 과정을 말하며, 최적의 파라메터를 추출하는 과정을 말한다.
+>**Intrinsic parameter(내부파라메터)** - Focal length(초점거리), Principal point(이미지중심), Distortion(K1, K2, K3, P1, P2-왜곡지수)
+>
+>**Extrinsic parameter(외부파라메터)** - Translation, Rotation - 두 카메라간의 위치, 각도 관계
 
-this tool have some functions below about stereo camera
-
-![enter image description here](./desc/StereoCalibrate_phase_one.png)
-이 사진은 여러장의 스테레오사진을 취득하여, 스테레오 카메라 켈리브레이션을 진행하는 다이어그램이다
-![enter image description here](./desc/StereoCalibrate_phase_two_three.png)
-이 프로그램은 더 확장하여, 나온 켈데이터와 영상의 좌표를 저장하고, 이를 입력으로 하여 다시 결과를 도출할수 있도록 설계하였다. 
-이로 인해, 패턴의 모양 차이와 관계없이 좌표만을 가지고 켈리브레이션 수행할 수 있어, 켈리브레이션 알고리즘간의 비교가 가능하였다 (opencv vs matlab) 
+## 지원기능
+이 툴은 간단하게 아래와 같은 기능을 가지고 있다.
+1. 원형 그리드 마커 / 사각 그리드 마커 사진 입력 지원 ( M x N 확장 가능 )
+2. 마커 대체 좌표 입력 지원 (M x N 확장 가능) - **타사 calibration algorithm 성능 비교 검증 가능**
+3. 학습된 켈 결과 데이터를 입력으로  re-calibration 추가 최적화  지원( 사진/ 좌표 입력 지원)
+4. 학습된 켈 결과와 입력 데이터 간의 성능검증  stereo re-projection error 계산 지원(Stereo RMS)
+5.  차트로 부터 Stereo camera를 이용한 rectify, depth 계산 지원(사진/ 좌표 입력 지원)
 
 
- 1. **stereo camera calibration using stereo images**
-    - **support circle grid marker**
-    - **support square grid marker**
-2. **stereo camera calibration using stereo points**
-    - **support marker's point calibration** 
-    - **(can be compare performance between calibration algorithms)**
-3. **optimize calibration using camera-calibration data and additional images**
-4. **optimize calibration using camera-calibration data and additional points**
-5. **can calculate reprojection error for stereo** 
-    - **it is sightly bigger than values of reprojection error**
-6.  **display detected point  of target for debugging**
-7.  **display pose estimation for debugging about marker chart**
-8.  **display detection point on image and reprojection point from marker using calibration data**
-9. **can transform from plus to minus or revert about focal length**
-10. **can transform from left to right image or revert about RT**
+## 확장기능
 
+1. 모든 하위폴더 Stereo camera calibration 지원(사진/좌표 입력) 
+	- **빠른 대응 - 3000대 샘플 생산 데이터 검증 및 켈 옵션 변경에 따른 정밀도 차이 검증**
+2. 모든 하위폴더 Stereo camera re-calibration 지원(추가 사진/좌표 입력)
+3. 모든 하위폴더 Stereo RMS 계산 지원(사진/좌표 입력) 
+	- **생산에서 생산된 데이터를 입력으로 검증 가능**
+4. \+ focal length와 \- focal length 둘다 변환 지원 ( Default : minus focal length)
+5. 외부파라메터 두 카메라간의 RT정보 변환 지원 Left->Right/Right->Left (Default: Right->Left)
+
+<img  src = "./desc/StereoCalibrate_phase_one.png"  width="800px" >  
+
+ - > **Phase One** - Basic stereo camera calibration flow
+
+<img  src = "./desc/StereoCalibrate_phase_two_three.png"  width="800px">   
+ 
+ - > **Phase Two** - Stereo camera re-calibration flow using image and point
+
+ - > **Phase Three** - Verify calibration parameter and image among different calibration algorithms 
+
+
+
+
+## 실행방법
+
+All your files and folders are presented as a tree in the file explorer. You can switch from one to another by clicking a file in the tree.
+
+## 실행결과
+
+You can rename the current file by clicking the file name in the navigation bar or by clicking the **Rename** button in the file explorer.
+
+## 참고문헌
+1. [https://github.com/bvnayak/stereo_calibration](https://github.com/bvnayak/stereo_calibration)
+2. https://sourishghosh.com/2016/stereo-calibration-cpp-opencv/
+3. https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_calib3d/py_calibration/py_calibration.html#calibration
 Please follow below - made by  [magicst3@gmail.com](mailto:magicst3@gmail.com)  
-this tool is support stereo calibration using both image or camera param. if you want to use images, please make folder and make subfolder name about LEFT and RIGHT. and copy left,right image to each folder go to #1 if you want to use camear data, please set up json(camera intrinsic, extrinsic param) and path of points(pattern 3d coordinate and L/R image coordinate)
 
-go to #2 if you want to test images based on designed camear data, please make folder and make subfolder name about LEFT and RIGHT. and copy left,right image to each folder
-
-go to #3
-
-#1 camera_calibrate_input_rms.py [path_of_image] ex1) camera_calibrate_input_rms.py ./image33/
-
-#2 camera_calibrate_input_rms.py [path_of_image] [json file] [path of csv] ex2) camera_calibrate_input_rms.py ./input_sm/ ./input_sm/stereo_config2.json ./input_sm/
-
-ex3) camera_calibrate_input_rms.py ./input_lgit/ ./input_lgit/stereo_config_33_2_1.json ./input_lgit/ #3 camera_calibrate_input_rms.py [path_of_image] [json file] ex2) camera_calibrate_input_rms.py ./image33/ ./input_sm/stereo_config2.json
-
-================================================================================
-
-#example #D:\HET\calib\data\example\image\cal\circle\raw #change option
-
-[](https://github.com/yeolip/stereo_camera_calibration/tree/readme_edit#select_png_or_raw--------1--------------------------------png-0-raw-1)select_png_or_raw = 1 #png: 0, raw: 1 #D:\HET\calib\data\example\image\cal\circle\png #change option # [](https://github.com/yeolip/stereo_camera_calibration/tree/readme_edit#select_png_or_raw--------0--------------------------------png-0-raw-1)select_png_or_raw = 0 #png: 0, raw: 1 #D:\HET\calib\data\example\image\cal\square\png_8_5 # [](https://github.com/yeolip/stereo_camera_calibration/tree/readme_edit#marker_point_x--8-----patterns-width-point)marker_point_x = 8 #pattern's width point # [](https://github.com/yeolip/stereo_camera_calibration/tree/readme_edit#marker_point_y--5-----patterns-height-point)marker_point_y = 5 #pattern's height point # [](https://github.com/yeolip/stereo_camera_calibration/tree/readme_edit#marker_length--60------patterns-gap-unit-is-mm)marker_length = 60 #pattern's gap (unit is mm)
-
-(https://github.com/yeolip/stereo_camera_calibration/tree/readme_edit#select_detect_pattern----1--------------------------------circle-0-square-1)select_detect_pattern = 1 #circle: 0, square: 1
-
-(https://github.com/yeolip/stereo_camera_calibration/tree/readme_edit#select_png_or_raw--------0--------------------------------png-0-raw-1-1)select_png_or_raw = 0 #png: 0, raw: 1
-
-#D:\HET\calib\data\example\image\cal\square\raw_6_4
-
-(https://github.com/yeolip/stereo_camera_calibration/tree/readme_edit#marker_point_x--6-----patterns-width-point)marker_point_x = 6 #pattern's width point
-
-(https://github.com/yeolip/stereo_camera_calibration/tree/readme_edit#marker_point_y--4-----patterns-height-point)marker_point_y = 4 #pattern's height point
-
-(https://github.com/yeolip/stereo_camera_calibration/tree/readme_edit#marker_length--60------patterns-gap-unit-is-mm-1)marker_length = 60 #pattern's gap (unit is mm)
-
-(https://github.com/yeolip/stereo_camera_calibration/tree/readme_edit#select_detect_pattern----1--------------------------------circle-0-square-1-1)select_detect_pattern = 1 #circle: 0, square: 1
-
-(https://github.com/yeolip/stereo_camera_calibration/tree/readme_edit#select_png_or_raw--------1--------------------------------png-0-raw-1-1)select_png_or_raw = 1 #png: 0, raw: 1
-
-#D:\HET\calib\data\example\image\cal\circle\raw D:\HET\calib\data\example\image\cal\circle\raw\stereo_config_result_r_to_l.json
-
-(https://github.com/yeolip/stereo_camera_calibration/tree/readme_edit#select_png_or_raw--------1--------------------------------png-0-raw-1-2)select_png_or_raw = 1 #png: 0, raw: 1
-
-# reference
-
-[https://github.com/bvnayak/stereo_calibration](https://github.com/bvnayak/stereo_calibration)
 
 
 ![enter image description here](./desc/detected_point.png)
