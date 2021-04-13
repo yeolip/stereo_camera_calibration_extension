@@ -40,12 +40,13 @@
  - > **Phase Three** - Verify calibration parameter and image among different calibration algorithms 
 
 
+
 ## extract_camera_param.py ( 켈데이터 모음 및 산포도 그래프 지원 )
 Stereo camera calibration 데이터의 산포 or 분포를 확인할 때 사용한다
-<img  src = "./desc/scatter_data.png" >  
-<img  src = "./desc/scatter_plot0.png" >  
-<img  src = "./desc/scatter_plot1.png" >  
-<img  src = "./desc/scatter_plot2.png" >  
+<img  src = "./desc/scatter_data.png" width="1637px">  
+<img  src = "./desc/scatter_plot0.png" width="450px"><img  src = "./desc/scatter_plot1.png" width="450px">
+<img  src = "./desc/scatter_plot2.png" width="600px">  
+
 
 
 ### multi_calib_cmd.py (확장 실행 파일)
@@ -58,6 +59,7 @@ Stereo camera calibration 데이터의 산포 or 분포를 확인할 때 사용�
 | - -recursive  |하위폴더 모두 탐색 및 실행 | --|
 | - -  |--| --|
 |   |   |   |
+
 
 ### 예제 
 	단일 명령어
@@ -80,6 +82,7 @@ Stereo camera calibration 데이터의 산포 or 분포를 확인할 때 사용�
 	확장 재귀 명령어3 --recursive + check point & json(calib data)탐색  
 	 --action 2 --path_point ./point --recursive  
 	 --action 3 --path_point ./point --recursive
+
 
 ### camera_calibrate_input_rms.py(기본 실행 파일)
 코드상에 값을 변경해야함 
