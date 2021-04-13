@@ -113,7 +113,8 @@ class SearchManager(object):
                 elif(args.path_point != None):
                     objCal.initialize(args.path_point)
                     # objCal.read_points_with_mono_stereo(args.path_point, args.path_json, None)
-                    objCal.read_points_with_stereo(args.path_point, args.path_json, None)
+                    # objCal.read_points_with_stereo(args.path_point, args.path_json, None)
+                    objCal.read_points_with_stereo(args.path_point, args.path_json, None, opt2=user_calib_option('FIX'))
                     #please check intrinsic flag (GUESS or FIX)
 
         elif(args.action == 3):
