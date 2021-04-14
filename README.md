@@ -44,8 +44,8 @@
 ## extract_camera_param.py ( 켈데이터 모음 및 산포도 그래프 지원 )
 Stereo camera calibration 데이터의 산포 or 분포를 확인할 때 사용한다
 <img  src = "./desc/scatter_data.png" width="1637px">  
-<img  src = "./desc/scatter_plot0.png" width="450px"><img  src = "./desc/scatter_plot1.png" width="450px">
-<img  src = "./desc/scatter_plot2.png" width="600px">  
+<img  src = "./desc/scatter_plot0.png" width="420px"><img  src = "./desc/scatter_plot1.png" width="420px">
+<img  src = "./desc/scatter_plot2.png" width="420px">  
 
 
 
@@ -184,10 +184,17 @@ Please follow below - made by  [magicst3@gmail.com](mailto:magicst3@gmail.com)
 
 
 ## 그밖의 사진(정리중...)
-![enter image description here](./desc/detected_point.png)
-![enter image description here](./desc/detected_point_square.png)
-![enter image description here](./desc/distance.png)
-![enter image description here](./desc/pose_estimate.png)
-![enter image description here](./desc/reprojection_and_image_point.png)
-![enter image description here](./desc/RT_XYZaxis.png)
-![enter image description here](./desc/correcspond_epilines.png)
+<img  src = "./desc/detected_point.png" width="450px" >
+ 원형 그리드 차트 점 위치 (디버깅)
+<img  src = "./desc/detected_point_square.png" width="450px">
+ 사각형 그리드 차트 점 위치 (디버깅)
+<img  src = "./desc/distance.png" width="450px">
+ 차트와 카메라 간의 거리 측정 체크 (디버깅)
+<img  src = "./desc/pose_estimate.png" width="450px">
+ 차트의 RT관련 축 그리기 (디버깅)
+<img  src = "./desc/reprojection_and_image_point.png" width="450px">
+ 이미지상의 차트 교차점과 켈데이터에 의해 계산된 점 그리기( 디버깅)
+<img  src = "./desc/RT_XYZaxis.png" width="450px">
+ 두 카메라 간의 RT에 대한 opencv축 검증( 디버깅)
+<img  src = "./desc/correcspond_epilines.png" width="450px">
+ 스테레오 영상을 이용한 좌표 rectification (디버깅)
