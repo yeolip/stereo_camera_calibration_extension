@@ -44,8 +44,8 @@
 ## extract_camera_param.py ( 켈데이터 모음 및 산포도 그래프 지원 )
 Stereo camera calibration 데이터의 산포 or 분포를 확인할 때 사용한다
 <img  src = "./desc/scatter_data.png" width="1637px">  
-<img  src = "./desc/scatter_plot0.png" width="420px"><img  src = "./desc/scatter_plot1.png" width="420px">
-<img  src = "./desc/scatter_plot2.png" width="420px">  
+<img  src = "./desc/scatter_plot0.png" width="400px"><img  src = "./desc/scatter_plot1.png" width="400px">
+<img  src = "./desc/scatter_plot2.png" width="400px">  
 
 
 
@@ -173,14 +173,16 @@ Stereo camera calibration 데이터의 산포 or 분포를 확인할 때 사용�
 	    ]
 	}
 
-
+## 테스트 검증 
+<img  src = "./desc/test_example1.png" width="873px">
+<img  src = "./desc/test_example2.png" width="924px">
 
 
 ## 참고문헌
 1. [https://github.com/bvnayak/stereo_calibration](https://github.com/bvnayak/stereo_calibration)
 2. https://sourishghosh.com/2016/stereo-calibration-cpp-opencv/
 3. https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_calib3d/py_calibration/py_calibration.html#calibration
-Please follow below - made by  [magicst3@gmail.com](mailto:magicst3@gmail.com)  
+ 
 
 
 ## 그밖의 사진(정리중...)
