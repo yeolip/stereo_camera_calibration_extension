@@ -43,6 +43,7 @@
 
 ## extract_camera_param.py ( 켈데이터 모음 및 산포도 그래프 지원 )
 Stereo camera calibration 데이터의 산포 or 분포를 확인할 때 사용한다
+(각 파라메터의 평균(AVG), 표준편차(STD)는 수동으로 계산필요. 추후 업데이트)
 <img  src = "./desc/scatter_data.png" width="1637px">  
 <img  src = "./desc/scatter_plot0.png" width="400px"><img  src = "./desc/scatter_plot1.png" width="400px">
 <img  src = "./desc/scatter_plot2.png" width="400px">  
@@ -112,6 +113,14 @@ Stereo camera calibration 데이터의 산포 or 분포를 확인할 때 사용�
 | default_camera_param_k4 |접선왜곡p2| -- |
 | default_camera_param_k5 |방사왜곡k3| -- |
 |   |   |   |
+
+
+## Input format
+1. 사진 - 하위폴더로 /LEFT, /RIGHT 안에 영상 필요
+2. 좌표 - *.csv로 저장
+단위 - meter(Chart 3D) , pixel(Image 2D)
+<img  src = "./desc/point_csv_file.png" width="538px">  
+3. 켈데이터 - 아래 output format of calibration data와 상동
 
 
 ## Output format of calibration data 
