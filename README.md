@@ -5,7 +5,9 @@
 ## Stereo camera calibration의 정의
 
 동일한 차트로 다양한 각도의 영상을 촬영하여, 두 카메라의 특성의 내부 파라메터와 외부 파라메터를 계산하기 위한 과정을 말하며, 최적의 파라메터를 추출하는 과정을 말한다.
->**Intrinsic parameter(내부파라메터)** - Focal length(초점거리), Principal point(이미지중심), Distortion(K1, K2, K3, P1, P2-왜곡지수)
+>**Intrinsic parameter(내부파라메터)** - Focal length(초점거리), Principal point(이미지중심), 
+Distortion(K1, K2, K3, P1, P2-왜곡지수), 
+Distortion_ext지원(K1, K2, K3, P1, P2, K4, K5, K6-왜곡지수) 
 >
 >**Extrinsic parameter(외부파라메터)** - Translation, Rotation - 두 카메라간의 위치, 각도 관계
 
@@ -112,6 +114,9 @@ Stereo camera calibration 데이터의 산포 or 분포를 확인할 때 사용�
 | default_camera_param_k3 |접선왜곡p1| -- |
 | default_camera_param_k4 |접선왜곡p2| -- |
 | default_camera_param_k5 |방사왜곡k3| -- |
+| default_camera_param_k6 |방사왜곡k4| ext지원 |
+| default_camera_param_k7 |방사왜곡k5| ext지원 |
+| default_camera_param_k8 |방사왜곡k6| ext지원 |
 |   |   |   |
 
 
@@ -181,6 +186,8 @@ Stereo camera calibration 데이터의 산포 or 분포를 확인할 때 사용�
 	        1.0
 	    ]
 	}
+
+## ext지원 적용방법
 
 ## 테스트 검증 
 <img  src = "./desc/test_example1.png" width="873px">
