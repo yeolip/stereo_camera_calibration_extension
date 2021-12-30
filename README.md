@@ -1,6 +1,7 @@
 # Stereo camera calibration extension
 
 2018년도에 Stereo camera calibration의 생산 라인 카메라 셋업을 담당하게 되어, Stereo camera calibration의 성능 보장을 위한 다양한 검증을 위해, opencv 기반의 검사 툴을 만들어 사용하였다.
+2021년도 Distortion Rational, Thin Prime Model추가업데이트 하였음.
 
 ## Stereo camera calibration의 정의
 
@@ -187,7 +188,14 @@ Stereo camera calibration 데이터의 산포 or 분포를 확인할 때 사용�
 	    ]
 	}
 
-## ext지원 적용방법
+## ext지원 Distortion extend parameter적용방법
+multi_calib_cmd.py에서 아래와 같이 변경한다.
+-	camera_calibrate_input_rms - 기존 k1,k2,p1,p2,k3지원 코드
+-	camera_calibrate_input_rms_ext - k1,k2,p1,p2,k3,k4,k5,k6 (추가확장가능)
+- 아래와 같이 15,16 line을 수정해주면 됨
+- #import camera_calibrate_input_rms as stereoCalib
+- import camera_calibrate_input_rms_ext as stereoCalib
+
 
 ## 테스트 검증 
 <img  src = "./desc/test_example1.png" width="873px">

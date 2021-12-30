@@ -3022,7 +3022,7 @@ class StereoCalibration(object):
 
             _, rvec_l, tvec_l = cv2.solvePnP(obj_points[i], t_imgpoints_l, A1, D1, flags=cv2.SOLVEPNP_ITERATIVE     )
             # print(A1)
-            # print('rvec_l', 'tvec_l',rvec_l, tvec_l)
+            #print('rvec_l tvec_l\n',rvec_l,'\n', tvec_l,'\n')
 
             # _, temp_rvecs, temp_tvecs = cv2.solvePnP(obj_points[i], imgpoints_l[i], A1, D1, flags=cv2.SOLVEPNP_ITERATIVE  )
             #print('temp_rvecs', 'temp_tvecs', temp_rvecs, temp_tvecs)
@@ -3035,7 +3035,7 @@ class StereoCalibration(object):
 
             # calculate world <-> cam2 transformation
             rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
-            # print('rvec_r', 'tvec_r', rvec_r, tvec_r)
+            #print('rvec_r tvec_r\n', rvec_r,'\n', tvec_r,'\n')
 
             # compute reprojection error for cam2
             rp_r, _ = cv2.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)

@@ -12,8 +12,8 @@ import sys  #, getopt
 import csv
 import datetime as dt
 #import scipy.optimize
-#import camera_calibrate_input_rms as stereoCalib
-import camera_calibrate_input_rms_ext as stereoCalib
+import camera_calibrate_input_rms as stereoCalib
+#import camera_calibrate_input_rms_ext as stereoCalib
 
 C_FIX_INTRINSIC = 256
 C_FIX_PRINCIPAL_POINT = 4
@@ -50,6 +50,8 @@ def user_calib_option(ttype):
         tflag = C_USE_INTRINSIC_GUESS|C_SAME_FOCAL_LENGTH|C_FIX_FOCAL_LENGTH|C_FIX_ASPECT_RATIO|C_ZERO_TANGENT_DIST|C_FIX_K3|C_FIX_K4|C_FIX_K5
     elif (ttype == 'USER3'):
         tflag = C_USE_INTRINSIC_GUESS|C_FIX_ASPECT_RATIO|C_FIX_K3|C_FIX_K4|C_FIX_K5
+    elif (ttype == 'USER4'):
+        tflag = C_USE_INTRINSIC_GUESS|C_RATIONAL_MODEL|C_ZERO_TANGENT_DIST|C_FIX_K5|C_FIX_K6
 
     return tflag
 
@@ -99,7 +101,7 @@ class SearchManager(object):
             if (args.path_img != None):
                 print("\nIMAGE ", args.path_img)
                 objCal.initialize(args.path_img)
-                objCal.read_images_with_mono_stereo(args.path_img, opt1=user_calib_option('GUESS_K6'), opt2=user_calib_option('GUESS_K6'))
+                objCal.read_images_with_mono_stereo(args.path_img, opt1=user_calib_option('GUESS'), opt2=user_calib_option('GUESS'))
             elif (args.path_point != None):
                 print("\nPOINT ", args.path_point)
                 objCal.initialize(args.path_point)
