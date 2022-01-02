@@ -12,8 +12,20 @@ import sys  #, getopt
 import csv
 import datetime as dt
 #import scipy.optimize
-import camera_calibrate_input_rms as stereoCalib
+#import camera_calibrate_input_rms as stereoCalib
 #import camera_calibrate_input_rms_ext as stereoCalib
+import camera_calibrate_input_rms_fisheye as stereoCalib    #opt1 & opt2 flag have hard coding
+
+# CALIB_CHECK_COND = 4
+# CALIB_FIX_INTRINSIC = 256
+# CALIB_FIX_K1 = 16
+# CALIB_FIX_K2 = 32
+# CALIB_FIX_K3 = 64
+# CALIB_FIX_K4 = 128
+# CALIB_FIX_PRINCIPAL_POINT = 512
+# CALIB_FIX_SKEW = 8
+# CALIB_RECOMPUTE_EXTRINSIC = 2
+# CALIB_USE_INTRINSIC_GUESS = 1
 
 C_FIX_INTRINSIC = 256
 C_FIX_PRINCIPAL_POINT = 4

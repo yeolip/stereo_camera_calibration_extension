@@ -133,8 +133,8 @@ image_height = 964
 default_camera_param_f = 1470
 default_camera_param_cx = image_width/2
 default_camera_param_cy = image_height/2
-default_camera_param_k1 = -0.1
-default_camera_param_k2 = -0.2
+default_camera_param_k1 = 0
+default_camera_param_k2 = 0
 default_camera_param_k3 = 0
 default_camera_param_k4 = 0
 default_camera_param_k5 = 0
@@ -289,11 +289,11 @@ def convert(o):
     print(o, type(o))
     raise TypeError
 
-def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp, E, F):
+def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp, E=None, F=None):
     # fpd = pd.read_json(filename)
     # print("modify_value_from_json")
     # fp = open(filename + '_sample.json')
-    init_json = {'type': 'Calibration Parameter for Stereo Camera', 'version': 1.2, 'master': {'serial': 0, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'k5': 0, 'calib_res': [0, 0]}}, 'slave': {'serial': 1, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'k5': 0, 'calib_res': [0, 0]}}}
+    init_json = {'type': 'Calibration Parameter for Stereo Camera', 'version': 1.2, 'master': {'serial': 0, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'calib_res': [0, 0]}}, 'slave': {'serial': 1, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'calib_res': [0, 0]}}}
 
     fjson = json.dumps(init_json)
     # print(filename + '_sample.json')
@@ -333,14 +333,15 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
             tM2[0][0] = - (M2[0][0])
             tM2[1][1] = - (M2[1][1])
 
-            td1[0][2] = - (td1[0][2])
-            td1[0][3] = - (td1[0][3])
-            td2[0][2] = - (td2[0][2])
-            td2[0][3] = - (td2[0][3])
+            # td1[2] = - (td1[2])
+            # td1[3] = - (td1[3])
+            # td2[2] = - (td2[2])
+            # td2[3] = - (td2[3])
     else:
         print("flag enable_intrinsic_minus_focal")
         if(M1[0][0] > 0):
             print("input +focal")
+
             tR[0][2] = -(R[0][2])
             tR[1][2] = -(R[1][2])
             tR[2][0] = -(R[2][0])
@@ -355,10 +356,10 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
             tM2[0][0] = - (M2[0][0])
             tM2[1][1] = - (M2[1][1])
 
-            td1[0][2] = - (td1[0][2])
-            td1[0][3] = - (td1[0][3])
-            td2[0][2] = - (td2[0][2])
-            td2[0][3] = - (td2[0][3])
+            # td1[0][2] = - (td1[0][2])
+            # td1[0][3] = - (td1[0][3])
+            # td2[0][2] = - (td2[0][2])
+            # td2[0][3] = - (td2[0][3])
         else:
             print("input -focal")  #ok
 
@@ -382,28 +383,28 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
 
     fjs["master"]["lens_params"]['focal_len'] = tM1[0][0], tM1[1][1]
     fjs["master"]["lens_params"]['principal_point'] = tM1[0][2], tM1[1][2]
-    fjs["master"]["lens_params"]['k1'] = td1[0][0]
-    fjs["master"]["lens_params"]['k2'] = td1[0][1]
-    fjs["master"]["lens_params"]['k3'] = td1[0][2]
-    fjs["master"]["lens_params"]['k4'] = td1[0][3]
-    fjs["master"]["lens_params"]['k5'] = td1[0][4]
+    fjs["master"]["lens_params"]['k1'] = list(td1[0])
+    fjs["master"]["lens_params"]['k2'] = list(td1[1])
+    fjs["master"]["lens_params"]['k3'] = list(td1[2])
+    fjs["master"]["lens_params"]['k4'] = list(td1[3])
     fjs["slave"]["lens_params"]['focal_len'] = tM2[0][0], tM2[1][1]
     fjs["slave"]["lens_params"]['principal_point'] = tM2[0][2], tM2[1][2]
-    fjs["slave"]["lens_params"]['k1'] = td2[0][0]
-    fjs["slave"]["lens_params"]['k2'] = td2[0][1]
-    fjs["slave"]["lens_params"]['k3'] = td2[0][2]
-    fjs["slave"]["lens_params"]['k4'] = td2[0][3]
-    fjs["slave"]["lens_params"]['k5'] = td2[0][4]
+    fjs["slave"]["lens_params"]['k1'] = list(td2[0])
+    fjs["slave"]["lens_params"]['k2'] = list(td2[1])
+    fjs["slave"]["lens_params"]['k3'] = list(td2[2])
+    fjs["slave"]["lens_params"]['k4'] = list(td2[3])
     print("*" * 50)
 
     fjs["master"]["lens_params"]['calib_res'] = imgsize
     fjs["slave"]["lens_params"]['calib_res'] = imgsize
 
     fjs["reprojection_error"] = np.round(ret_rp,8)
-    tE = np.round(E, 8)
-    tF = np.round(F, 8)
-    fjs["essensial_matrix"] = tE[0][0],tE[0][1],tE[0][2],tE[1][0],tE[1][1],tE[1][2],tE[2][0],tE[2][1],tE[2][2]
-    fjs["fundamental_matrix"] = tF[0][0],tF[0][1],tF[0][2],tF[1][0],tF[1][1],tF[1][2],tF[2][0],tF[2][1],tF[2][2]
+    if(E != None):
+        tE = np.round(E, 8)
+        fjs["essensial_matrix"] = tE[0][0],tE[0][1],tE[0][2],tE[1][0],tE[1][1],tE[1][2],tE[2][0],tE[2][1],tE[2][2]
+    if(F != None):
+        tF = np.round(F, 8)
+        fjs["fundamental_matrix"] = tF[0][0],tF[0][1],tF[0][2],tF[1][0],tF[1][1],tF[1][2],tF[2][0],tF[2][1],tF[2][2]
 
     # wfp = open(path + '/' +filename + '_result_l_to_r' + '.json', 'w', encoding='utf-8')
     # print( path + '/' +filename+ '_result_l_to_r' + '.json')
@@ -692,7 +693,7 @@ def least_squares_stereo_rmse(x, tobj_point, timgpoint_l, timgpoint_r, A1, D1, A
     total_points += len(tobj_point)
 
     # calculate world <-> cam2 transformation
-    rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.fisheye.Rodrigues(R)[0], T)[:2]
+    rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
     # print('rvec_r', 'tvec_r', rvec_r, tvec_r)
 
     # compute reprojection error for cam2
@@ -735,7 +736,7 @@ def least_squares_stereo_rmse2(x, tobj_point, timgpoint_l, timgpoint_r, A1, D1, 
     total_points += len(tobj_point)
 
     # calculate world <-> cam2 transformation
-    rvec_r2, tvec_r2 = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.fisheye.Rodrigues(R)[0], T)[:2]
+    rvec_r2, tvec_r2 = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
     # print('rvec_r', 'tvec_r', rvec_r, tvec_r)
 
     # compute reprojection error for cam2
@@ -773,7 +774,7 @@ def least_squares_stereo_rmse3(x, R, T):
     x[6:9] = rvec_r.reshape(3)
     x[9:12] = tvec_r.reshape(3)
 
-    rvec_r2, tvec_r2 = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.fisheye.Rodrigues(R)[0], T)[:2]
+    rvec_r2, tvec_r2 = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
     # print('rvec_r', 'tvec_r', rvec_r, tvec_r)
 
     # residuals = np.sum(np.square(rvec_r-rvec_r2) + np.square(tvec_r-tvec_r2))
@@ -787,7 +788,7 @@ def least_squares_stereo_rmse4(x, tobj_point, timgpoint_l, timgpoint_r, A1, D1, 
     rvec_l = x[0:3]
     tvec_l = x[3:6]
     rp_l, _ = cv2.fisheye.projectPoints(tobj_point, rvec_l, tvec_l, A1, D1)
-    rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.fisheye.Rodrigues(R)[0], T)[:2]
+    rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
     rp_r, _ = cv2.fisheye.projectPoints(tobj_point, rvec_r, tvec_r, A2, D2)
 
     residuals = np.vstack([np.float64(rp_l - timgpoint_l), np.float64(rp_r - timgpoint_r)]).ravel()
@@ -1023,27 +1024,27 @@ class StereoCalibration(object):
 
         filemax = len(images_right)
 
-        #  cv2.fisheye.imshow('detected circles',cimg)
-        #  cv2.fisheye.waitKey(0)
-        #  cv2.fisheye.destroyAllWindows()
+        #  cv2.imshow('detected circles',cimg)
+        #  cv2.waitKey(0)
+        #  cv2.destroyAllWindows()
         tempOffset = 32763
-        cv2.fisheye.namedWindow('RightImage_RT', cv2.fisheye.WINDOW_AUTOSIZE)  # WINDOW_AUTOSIZE  #WINDOW_NORMAL
-        cv2.fisheye.createTrackbar('fileNum', 'RightImage_RT', 0, filemax - 1, self.nothing)
-        cv2.fisheye.createTrackbar('Tx', 'RightImage_RT', tempOffset, 65535, self.nothing)
-        cv2.fisheye.createTrackbar('Ty', 'RightImage_RT', tempOffset, 65535, self.nothing)
-        cv2.fisheye.createTrackbar('Tz', 'RightImage_RT', tempOffset, 65535, self.nothing)
-        cv2.fisheye.createTrackbar('Rx', 'RightImage_RT', tempOffset, 65535, self.nothing)
-        cv2.fisheye.createTrackbar('Ry', 'RightImage_RT', tempOffset, 65535, self.nothing)
-        cv2.fisheye.createTrackbar('Rz', 'RightImage_RT', tempOffset, 65535, self.nothing)
+        cv2.namedWindow('RightImage_RT', cv2.fisheye.WINDOW_AUTOSIZE)  # WINDOW_AUTOSIZE  #WINDOW_NORMAL
+        cv2.createTrackbar('fileNum', 'RightImage_RT', 0, filemax - 1, self.nothing)
+        cv2.createTrackbar('Tx', 'RightImage_RT', tempOffset, 65535, self.nothing)
+        cv2.createTrackbar('Ty', 'RightImage_RT', tempOffset, 65535, self.nothing)
+        cv2.createTrackbar('Tz', 'RightImage_RT', tempOffset, 65535, self.nothing)
+        cv2.createTrackbar('Rx', 'RightImage_RT', tempOffset, 65535, self.nothing)
+        cv2.createTrackbar('Ry', 'RightImage_RT', tempOffset, 65535, self.nothing)
+        cv2.createTrackbar('Rz', 'RightImage_RT', tempOffset, 65535, self.nothing)
         while (1):
             # get current positions of four trackbars
-            filenum = cv2.fisheye.getTrackbarPos('fileNum', 'RightImage_RT')
-            tx_val = cv2.fisheye.getTrackbarPos('Tx', 'RightImage_RT')
-            ty_val = cv2.fisheye.getTrackbarPos('Ty', 'RightImage_RT')
-            tz_val = cv2.fisheye.getTrackbarPos('Tz', 'RightImage_RT')
-            rx_val = cv2.fisheye.getTrackbarPos('Rx', 'RightImage_RT')
-            ry_val = cv2.fisheye.getTrackbarPos('Ry', 'RightImage_RT')
-            rz_val = cv2.fisheye.getTrackbarPos('Rz', 'RightImage_RT')
+            filenum = cv2.getTrackbarPos('fileNum', 'RightImage_RT')
+            tx_val = cv2.getTrackbarPos('Tx', 'RightImage_RT')
+            ty_val = cv2.getTrackbarPos('Ty', 'RightImage_RT')
+            tz_val = cv2.getTrackbarPos('Tz', 'RightImage_RT')
+            rx_val = cv2.getTrackbarPos('Rx', 'RightImage_RT')
+            ry_val = cv2.getTrackbarPos('Ry', 'RightImage_RT')
+            rz_val = cv2.getTrackbarPos('Rz', 'RightImage_RT')
 
             tx = tx_val - tempOffset
             ty = ty_val - tempOffset
@@ -1053,29 +1054,29 @@ class StereoCalibration(object):
             rz = rz_val - tempOffset
 
             # init
-            img_l = cv2.fisheye.imread(images_left[filenum])
-            img_r = cv2.fisheye.imread(images_right[filenum])
+            img_l = cv2.imread(images_left[filenum])
+            img_r = cv2.imread(images_right[filenum])
             print(images_right[filenum])
             #gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
 
-            font = cv2.fisheye.FONT_HERSHEY_SIMPLEX
+            font = cv2.FONT_HERSHEY_SIMPLEX
             tempText = "tx=%f,ty=%f,tz=%f"%(tx,ty,tz)
             tempText2 = "rx=%f,ry=%f,rz=%f"%(rx,ry,rz)
-            cv2.fisheye.putText(img_r, tempText, (10, 50), font, 1, (255, 255, 255), 2, cv2.fisheye.LINE_AA)
-            cv2.fisheye.putText(img_r, tempText2, (10, 100), font, 1, (255, 255, 255), 2, cv2.fisheye.LINE_AA)
+            cv2.putText(img_r, tempText, (10, 50), font, 1, (255, 255, 255), 2, cv2.fisheye.LINE_AA)
+            cv2.putText(img_r, tempText2, (10, 100), font, 1, (255, 255, 255), 2, cv2.fisheye.LINE_AA)
 
             if(enable_debug_loop_moving_of_rot_and_trans == 1):
                 _, rvec_l, tvec_l, _ = cv2.fisheye.solvePnPRansac(self.objpoints[filenum], self.imgpoints_l[filenum], self.M1,self.d1)
                 uR31 = rvec_l
                 tran = tvec_l
 
-            uR31 = rot   #cv2.fisheye.Rodrigues(self.R)
+            uR31 = rot   #cv2.Rodrigues(self.R)
 
             uR = np.zeros((3), np.float64)
             uR[0] = uR31[0] + (rx /1000 * degreeToRadian)
             uR[1] = uR31[1] + (ry /1000 * degreeToRadian)
             uR[2] = uR31[2] + (rz /1000 * degreeToRadian)
-            uR33, _ = cv2.fisheye.Rodrigues(uR)
+            uR33, _ = cv2.Rodrigues(uR)
 
             uT = np.zeros((3), np.float64)
             uT[0] = tran[0] + (tx/100000)
@@ -1083,8 +1084,8 @@ class StereoCalibration(object):
             uT[2] = tran[2] + (tz/100000)
             tempText = "tx=%f,ty=%f,tz=%f"%(uT[0],uT[1],uT[2])
             tempText2 = "rx=%f,ry=%f,rz=%f"%(uR[0],uR[1],uR[2])
-            cv2.fisheye.putText(img_r, tempText, (10, 150), font, 1, (255, 255, 255), 2, cv2.fisheye.LINE_AA)
-            cv2.fisheye.putText(img_r, tempText2, (10, 200), font, 1, (255, 255, 255), 2, cv2.fisheye.LINE_AA)
+            cv2.putText(img_r, tempText, (10, 150), font, 1, (255, 255, 255), 2, cv2.fisheye.LINE_AA)
+            cv2.putText(img_r, tempText2, (10, 200), font, 1, (255, 255, 255), 2, cv2.fisheye.LINE_AA)
 
             # print('uR', uR, '\nuT', uT, '\nuR33', uR33, '\n')
 
@@ -1113,14 +1114,14 @@ class StereoCalibration(object):
 
             # Draw and display the corners
             if (enable_debug_loop_moving_of_rot_and_trans == 1):
-                cv2.fisheye.imshow("LeftImage_RT", img_l)
+                cv2.imshow("LeftImage_RT", img_l)
 
-            cv2.fisheye.imshow("RightImage_RT", img_r)
+            cv2.imshow("RightImage_RT", img_r)
 
-            k = cv2.fisheye.waitKey(1000) & 0xFF
+            k = cv2.waitKey(1000) & 0xFF
             if k == 27:
                 break
-        cv2.fisheye.destroyAllWindows()
+        cv2.destroyAllWindows()
         pass
 
     # input - one & all csv point, output - stereo rms calc
@@ -1163,35 +1164,35 @@ class StereoCalibration(object):
                     img_l = cv2.cvtColor(gray_l, cv2.COLOR_GRAY2BGR)
                     img_r = cv2.cvtColor(gray_r, cv2.COLOR_GRAY2BGR)
                 else:
-                    img_l = cv2.fisheye.imread(images_left[i])
-                    img_r = cv2.fisheye.imread(images_right[i])
+                    img_l = cv2.imread(images_left[i])
+                    img_r = cv2.imread(images_right[i])
 
                     gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
                     gray_r = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)
-                # gray_l = cv2.fisheye.adaptiveThreshold(gray_l, 255, cv2.fisheye.ADAPTIVE_THRESH_MEAN_C, cv2.fisheye.THRESH_BINARY, 25, -5)
-                # gray_r = cv2.fisheye.adaptiveThreshold(gray_r, 255, cv2.fisheye.ADAPTIVE_THRESH_MEAN_C, cv2.fisheye.THRESH_BINARY, 25, -5)
-                # ret, gray_l = cv2.fisheye.threshold(gray_l, 40, 200, cv2.fisheye.THRESH_BINARY)
-                # ret, gray_r = cv2.fisheye.threshold(gray_r, 40, 200, cv2.fisheye.THRESH_BINARY)
+                # gray_l = cv2.adaptiveThreshold(gray_l, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
+                # gray_r = cv2.adaptiveThreshold(gray_r, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
+                # ret, gray_l = cv2.THRESHold(gray_l, 40, 200, cv2.THRESH_BINARY)
+                # ret, gray_r = cv2.THRESHold(gray_r, 40, 200, cv2.THRESH_BINARY)
 
                 # Find the chess board corners
                 if (select_detect_pattern == 1):
-                    # flags = cv2.fisheye.CALIB_CB_ADAPTIVE_THRESH | cv2.fisheye.CALIB_CB_NORMALIZE_IMAGE | cv2.fisheye.CALIB_CB_FILTER_QUADS
-                    ret_l, corners_l = cv2.fisheye.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), None)
-                    ret_r, corners_r = cv2.fisheye.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), None)
-                    # ret_l, corners_l = cv2.fisheye.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), flags = cv2.fisheye.CALIB_CB_ADAPTIVE_THRESH  )
-                    # ret_r, corners_r = cv2.fisheye.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), flags=cv2.fisheye.CALIB_CB_ADAPTIVE_THRESH)
+                    # flags = cv2.CALIB_CB_ADAPTIVE_THRESH | cv2.CALIB_CB_NORMALIZE_IMAGE | cv2.CALIB_CB_FILTER_QUADS
+                    ret_l, corners_l = cv2.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), None)
+                    ret_r, corners_r = cv2.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), None)
+                    # ret_l, corners_l = cv2.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), flags = cv2.CALIB_CB_ADAPTIVE_THRESH  )
+                    # ret_r, corners_r = cv2.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), flags=cv2.CALIB_CB_ADAPTIVE_THRESH)
                 else:
-                    blobPar = cv2.fisheye.SimpleBlobDetector_Params()
+                    blobPar = cv2.SimpleBlobDetector_Params()
                     blobPar.maxArea = 1000
                     blobPar.minArea = 20
                     # blobPar.minDistBetweenBlobs = 300
-                    blobDet = cv2.fisheye.SimpleBlobDetector_create(blobPar)
+                    blobDet = cv2.SimpleBlobDetector_create(blobPar)
 
-                    # flags = cv2.fisheye.CALIB_CB_SYMMETRIC_GRID + cv2.fisheye.CALIB_CB_CLUSTERING)
-                    ret_l, corners_l = cv2.fisheye.findCirclesGrid(gray_l, (marker_point_x, marker_point_y),
-                                                           flags=cv2.fisheye.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
-                    ret_r, corners_r = cv2.fisheye.findCirclesGrid(gray_r, (marker_point_x, marker_point_y),
-                                                           flags=cv2.fisheye.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
+                    # flags = cv2.CALIB_CB_SYMMETRIC_GRID + cv2.CALIB_CB_CLUSTERING)
+                    ret_l, corners_l = cv2.findCirclesGrid(gray_l, (marker_point_x, marker_point_y),
+                                                           flags=cv2.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
+                    ret_r, corners_r = cv2.findCirclesGrid(gray_r, (marker_point_x, marker_point_y),
+                                                           flags=cv2.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
 
                 print((images_left[i], ret_l))
                 print((images_right[i], ret_r))
@@ -1203,19 +1204,19 @@ class StereoCalibration(object):
                     # self.objpoints.append(self.objp_center)
 
                     if (select_detect_pattern == 1):
-                        rt = cv2.fisheye.cornerSubPix(gray_l, corners_l, (11, 11), (-1, -1), self.criteria)
-                        rt = cv2.fisheye.cornerSubPix(gray_r, corners_r, (11, 11), (-1, -1), self.criteria)
+                        rt = cv2.cornerSubPix(gray_l, corners_l, (11, 11), (-1, -1), self.criteria)
+                        rt = cv2.cornerSubPix(gray_r, corners_r, (11, 11), (-1, -1), self.criteria)
                     self.imgpoints_l.append(corners_l)
                     self.imgpoints_r.append(corners_r)
 
                     if (enable_debug_detect_pattern_from_image == 1):
                         # Draw and display the corners
-                        ret_l = cv2.fisheye.drawChessboardCorners(img_l, (marker_point_x, marker_point_y), corners_l, ret_l)
-                        ret_r = cv2.fisheye.drawChessboardCorners(img_r, (marker_point_x, marker_point_y), corners_r, ret_r)
-                        cv2.fisheye.imshow(str(i + 1) + 'st image  _ ' + images_left[i], img_l)
-                        cv2.fisheye.waitKey(500)
-                        cv2.fisheye.imshow(str(i + 1) + 'st image  _ ' + images_right[i], img_r)
-                        cv2.fisheye.waitKey(0)
+                        ret_l = cv2.drawChessboardCorners(img_l, (marker_point_x, marker_point_y), corners_l, ret_l)
+                        ret_r = cv2.drawChessboardCorners(img_r, (marker_point_x, marker_point_y), corners_r, ret_r)
+                        cv2.imshow(str(i + 1) + 'st image  _ ' + images_left[i], img_l)
+                        cv2.waitKey(500)
+                        cv2.imshow(str(i + 1) + 'st image  _ ' + images_right[i], img_r)
+                        cv2.waitKey(0)
                 # img_shape = gray_r.shape[::-1]
 
         if(cal_loadpoint != None):
@@ -1289,8 +1290,8 @@ class StereoCalibration(object):
         print('ret [ %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f]' % (s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5))
         print('ret | trans [ %.8f, %.8f, %.8f]' % (tranx, trany, tranz), 'rot_radian[ %.8f, %.8f, %.8f]' % (rotx, roty, rotz))
 
-        # rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrateCamera(self.objpoints, self.imgpoints_l, img_shape, camera_matrix,dist_coef, flags=flags)
-        # rt2, self.M2, self.d2, self.r2, self.t2 = cv2.fisheye.calibrateCamera(self.objpoints, self.imgpoints_r, img_shape, camera_matrix,dist_coef, flags=flags)
+        # rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrate(self.objpoints, self.imgpoints_l, img_shape, camera_matrix,dist_coef, flags=flags)
+        # rt2, self.M2, self.d2, self.r2, self.t2 = cv2.fisheye.calibrate(self.objpoints, self.imgpoints_r, img_shape, camera_matrix,dist_coef, flags=flags)
 
         print("=" * 50)
         print('Stereo_Intrinsic_Left', *np.round(camera_matrix_l, 5), sep='\n')
@@ -1308,7 +1309,7 @@ class StereoCalibration(object):
         uR[0] = rotx
         uR[1] = roty
         uR[2] = rotz
-        uR33, _ = cv2.fisheye.Rodrigues(uR)
+        uR33, _ = cv2.Rodrigues(uR)
 
         uT = np.zeros((3), np.float64)
         uT[0] = tranx
@@ -1365,17 +1366,17 @@ class StereoCalibration(object):
             flags = opt1
         else:
             flags = 0
-            # tflags |= cv2.fisheye.CALIB_FIX_INTRINSIC
-            # tflags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
-            flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
-            # tflags |= cv2.fisheye.CALIB_FIX_FOCAL_LENGTH
-            flags |= cv2.fisheye.CALIB_FIX_ASPECT_RATIO
-            flags |= cv2.fisheye.CALIB_ZERO_TANGENT_DIST
-            # tflags |= cv2.fisheye.CALIB_RATIONAL_MODEL
-            # tflags |= cv2.fisheye.CALIB_SAME_FOCAL_LENGTH
-            flags |= cv2.fisheye.CALIB_FIX_K3
-            flags |= cv2.fisheye.CALIB_FIX_K4
-            flags |= cv2.fisheye.CALIB_FIX_K5
+            # tflags |= cv2.CALIB_FIX_INTRINSIC
+            # tflags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+            flags |= cv2.CALIB_USE_INTRINSIC_GUESS
+            # tflags |= cv2.CALIB_FIX_FOCAL_LENGTH
+            flags |= cv2.CALIB_FIX_ASPECT_RATIO
+            flags |= cv2.CALIB_ZERO_TANGENT_DIST
+            # tflags |= cv2.CALIB_RATIONAL_MODEL
+            # tflags |= cv2.CALIB_SAME_FOCAL_LENGTH
+            flags |= cv2.CALIB_FIX_K3
+            flags |= cv2.CALIB_FIX_K4
+            flags |= cv2.CALIB_FIX_K5
 
         if(cal_loadjson != None):
             m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res \
@@ -1432,8 +1433,8 @@ class StereoCalibration(object):
 
         # single_rms_l, _, _ = self.reprojection_error2(self.objpoints, self.imgpoints_l, camera_matrix_l, dist_coef_l)
 
-        rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrateCamera(self.objpoints, self.imgpoints_l, img_shape, camera_matrix_l, dist_coef_l, flags=flags)
-        rt2, self.M2, self.d2, self.r2, self.t2 = cv2.fisheye.calibrateCamera(self.objpoints, self.imgpoints_r, img_shape, camera_matrix_r, dist_coef_r, flags=flags)
+        rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrate(self.objpoints, self.imgpoints_l, img_shape, camera_matrix_l, dist_coef_l, flags=flags)
+        rt2, self.M2, self.d2, self.r2, self.t2 = cv2.fisheye.calibrate(self.objpoints, self.imgpoints_r, img_shape, camera_matrix_r, dist_coef_r, flags=flags)
 
         print("=" * 50)
         print('Mono_Intrinsic_Left', *np.round(self.M1, 5), sep='\n')
@@ -1467,17 +1468,17 @@ class StereoCalibration(object):
             self.stereo_flags = opt2
         else:
             self.stereo_flags = 0
-            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_INTRINSIC
-            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
-            self.stereo_flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
-            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_FOCAL_LENGTH
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_ASPECT_RATIO
-            self.stereo_flags |= cv2.fisheye.CALIB_ZERO_TANGENT_DIST
-            # self.stereo_flags |= cv2.fisheye.CALIB_RATIONAL_MODEL
-            # self.stereo_flags |= cv2.fisheye.CALIB_SAME_FOCAL_LENGTH
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_K3
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_K4
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_K5
+            # self.stereo_flags |= cv2.CALIB_FIX_INTRINSIC
+            # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+            self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
+            # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
+            self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
+            self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
+            # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
+            # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
+            self.stereo_flags |= cv2.CALIB_FIX_K3
+            self.stereo_flags |= cv2.CALIB_FIX_K4
+            self.stereo_flags |= cv2.CALIB_FIX_K5
 
         self.camera_model = self.stereo_camera_calibrate(img_shape)
 
@@ -1573,8 +1574,8 @@ class StereoCalibration(object):
         print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f, %.8f]' % (s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5))
         print('ret | trans [ %.8f, %.8f, %.8f]' % (tranx, trany, tranz), 'rot_radian[ %.8f, %.8f, %.8f]' % (rotx, roty, rotz))
 
-        # rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrateCamera(self.objpoints, self.imgpoints_l, img_shape, camera_matrix,dist_coef, flags=flags)
-        # rt2, self.M2, self.d2, self.r2, self.t2 = cv2.fisheye.calibrateCamera(self.objpoints, self.imgpoints_r, img_shape, camera_matrix,dist_coef, flags=flags)
+        # rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrate(self.objpoints, self.imgpoints_l, img_shape, camera_matrix,dist_coef, flags=flags)
+        # rt2, self.M2, self.d2, self.r2, self.t2 = cv2.fisheye.calibrate(self.objpoints, self.imgpoints_r, img_shape, camera_matrix,dist_coef, flags=flags)
 
         print("=" * 50)
         print('Load_Intrinsic_Left', *np.round(self.M1, 5), sep='\n')
@@ -1587,17 +1588,17 @@ class StereoCalibration(object):
             self.stereo_flags = opt2
         else:
             self.stereo_flags = 0
-            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_INTRINSIC
-            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
-            self.stereo_flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
-            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_FOCAL_LENGTH
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_ASPECT_RATIO
-            self.stereo_flags |= cv2.fisheye.CALIB_ZERO_TANGENT_DIST
-            # self.stereo_flags |= cv2.fisheye.CALIB_RATIONAL_MODEL
-            # self.stereo_flags |= cv2.fisheye.CALIB_SAME_FOCAL_LENGTH
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_K3
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_K4
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_K5
+            # self.stereo_flags |= cv2.CALIB_FIX_INTRINSIC
+            # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+            self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
+            # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
+            self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
+            self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
+            # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
+            # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
+            self.stereo_flags |= cv2.CALIB_FIX_K3
+            self.stereo_flags |= cv2.CALIB_FIX_K4
+            self.stereo_flags |= cv2.CALIB_FIX_K5
 
         self.camera_model = self.stereo_camera_calibrate(img_shape)
 
@@ -1659,35 +1660,35 @@ class StereoCalibration(object):
                 img_r = cv2.cvtColor(gray_r, cv2.COLOR_GRAY2BGR)
 
             else:
-                img_l = cv2.fisheye.imread(images_left[i])
-                img_r = cv2.fisheye.imread(images_right[i])
+                img_l = cv2.imread(images_left[i])
+                img_r = cv2.imread(images_right[i])
 
                 gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
                 gray_r = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)
-            # gray_l = cv2.fisheye.adaptiveThreshold(gray_l, 255, cv2.fisheye.ADAPTIVE_THRESH_MEAN_C, cv2.fisheye.THRESH_BINARY, 25, -5)
-            # gray_r = cv2.fisheye.adaptiveThreshold(gray_r, 255, cv2.fisheye.ADAPTIVE_THRESH_MEAN_C, cv2.fisheye.THRESH_BINARY, 25, -5)
-            # ret, gray_l = cv2.fisheye.threshold(gray_l, 40, 200, cv2.fisheye.THRESH_BINARY)
-            # ret, gray_r = cv2.fisheye.threshold(gray_r, 40, 200, cv2.fisheye.THRESH_BINARY)
+            # gray_l = cv2.adaptiveThreshold(gray_l, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
+            # gray_r = cv2.adaptiveThreshold(gray_r, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
+            # ret, gray_l = cv2.THRESHold(gray_l, 40, 200, cv2.THRESH_BINARY)
+            # ret, gray_r = cv2.THRESHold(gray_r, 40, 200, cv2.THRESH_BINARY)
 
             # Find the chess board corners
             if (select_detect_pattern == 1):
-                # flags = cv2.fisheye.CALIB_CB_ADAPTIVE_THRESH | cv2.fisheye.CALIB_CB_NORMALIZE_IMAGE | cv2.fisheye.CALIB_CB_FILTER_QUADS
-                ret_l, corners_l = cv2.fisheye.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), None)
-                ret_r, corners_r = cv2.fisheye.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), None)
-                # ret_l, corners_l = cv2.fisheye.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), flags = cv2.fisheye.CALIB_CB_ADAPTIVE_THRESH  )
-                # ret_r, corners_r = cv2.fisheye.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), flags=cv2.fisheye.CALIB_CB_ADAPTIVE_THRESH)
+                # flags = cv2.CALIB_CB_ADAPTIVE_THRESH | cv2.CALIB_CB_NORMALIZE_IMAGE | cv2.CALIB_CB_FILTER_QUADS
+                ret_l, corners_l = cv2.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), None)
+                ret_r, corners_r = cv2.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), None)
+                # ret_l, corners_l = cv2.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), flags = cv2.CALIB_CB_ADAPTIVE_THRESH  )
+                # ret_r, corners_r = cv2.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), flags=cv2.CALIB_CB_ADAPTIVE_THRESH)
             else:
-                blobPar = cv2.fisheye.SimpleBlobDetector_Params()
+                blobPar = cv2.SimpleBlobDetector_Params()
                 blobPar.maxArea = 1000
                 blobPar.minArea = 20
                 # blobPar.minDistBetweenBlobs = 300
-                blobDet = cv2.fisheye.SimpleBlobDetector_create(blobPar)
+                blobDet = cv2.SimpleBlobDetector_create(blobPar)
 
-                # flags = cv2.fisheye.CALIB_CB_SYMMETRIC_GRID + cv2.fisheye.CALIB_CB_CLUSTERING)
-                ret_l, corners_l = cv2.fisheye.findCirclesGrid(gray_l, (marker_point_x, marker_point_y),
-                                                       flags=cv2.fisheye.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
-                ret_r, corners_r = cv2.fisheye.findCirclesGrid(gray_r, (marker_point_x, marker_point_y),
-                                                       flags=cv2.fisheye.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
+                # flags = cv2.CALIB_CB_SYMMETRIC_GRID + cv2.CALIB_CB_CLUSTERING)
+                ret_l, corners_l = cv2.findCirclesGrid(gray_l, (marker_point_x, marker_point_y),
+                                                       flags=cv2.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
+                ret_r, corners_r = cv2.findCirclesGrid(gray_r, (marker_point_x, marker_point_y),
+                                                       flags=cv2.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
 
             print((images_left[i], ret_l))
             print((images_right[i], ret_r))
@@ -1701,25 +1702,25 @@ class StereoCalibration(object):
                 # self.objpoints_center.append(self.objp_center)
 
                 if (select_detect_pattern == 1):
-                    rt = cv2.fisheye.cornerSubPix(gray_l, corners_l, (11, 11), (-1, -1), self.criteria)
+                    rt = cv2.cornerSubPix(gray_l, corners_l, (11, 11), (-1, -1), self.criteria)
                 self.imgpoints_l.append(corners_l)
                 # Draw and display the corners
-                ret_l = cv2.fisheye.drawChessboardCorners(img_l, (marker_point_x, marker_point_y), corners_l, ret_l)
+                ret_l = cv2.drawChessboardCorners(img_l, (marker_point_x, marker_point_y), corners_l, ret_l)
 
                 if (enable_debug_detect_pattern_from_image == 1):
-                    cv2.fisheye.imshow(str(i + 1) + 'st image  _ ' + images_left[i], img_l)
-                    cv2.fisheye.waitKey(500)
+                    cv2.imshow(str(i + 1) + 'st image  _ ' + images_left[i], img_l)
+                    cv2.waitKey(500)
 
                 if (select_detect_pattern == 1):
-                    rt = cv2.fisheye.cornerSubPix(gray_r, corners_r, (11, 11), (-1, -1), self.criteria)
+                    rt = cv2.cornerSubPix(gray_r, corners_r, (11, 11), (-1, -1), self.criteria)
                 self.imgpoints_r.append(corners_r)
 
                 # Draw and display the corners
-                ret_r = cv2.fisheye.drawChessboardCorners(img_r, (marker_point_x, marker_point_y), corners_r, ret_r)
+                ret_r = cv2.drawChessboardCorners(img_r, (marker_point_x, marker_point_y), corners_r, ret_r)
 
                 if (enable_debug_detect_pattern_from_image == 1):
-                    cv2.fisheye.imshow(str(i + 1) + 'st image  _ ' + images_right[i], img_r)
-                    cv2.fisheye.waitKey(0)
+                    cv2.imshow(str(i + 1) + 'st image  _ ' + images_right[i], img_r)
+                    cv2.waitKey(0)
 
             print(gray_l.shape[::-1])
             img_shape = gray_r.shape[::-1]
@@ -1771,8 +1772,8 @@ class StereoCalibration(object):
         print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f, %.8f]' % (s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5))
         print('ret | trans [ %.8f, %.8f, %.8f]' % (tranx, trany, tranz), 'rot_radian[ %.8f, %.8f, %.8f]' % (rotx, roty, rotz))
 
-        # rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrateCamera(self.objpoints, self.imgpoints_l, img_shape, camera_matrix_l,dist_coef_l, flags=flags)
-        # rt2, self.M2, self.d2, self.r2, self.t2 = cv2.fisheye.calibrateCamera(self.objpoints, self.imgpoints_r, img_shape, camera_matrix_r,dist_coef_r, flags=flags)
+        # rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrate(self.objpoints, self.imgpoints_l, img_shape, camera_matrix_l,dist_coef_l, flags=flags)
+        # rt2, self.M2, self.d2, self.r2, self.t2 = cv2.fisheye.calibrate(self.objpoints, self.imgpoints_r, img_shape, camera_matrix_r,dist_coef_r, flags=flags)
         # print("=" * 50)
         # print('Mono_Intrinsic_Left', *np.round(self.M1, 5), sep='\n')
         # print('distort_Left', np.round(self.d1, 5))
@@ -1784,17 +1785,17 @@ class StereoCalibration(object):
             self.stereo_flags = opt2
         else:
             self.stereo_flags = 0
-            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_INTRINSIC
-            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
-            self.stereo_flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
-            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_FOCAL_LENGTH
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_ASPECT_RATIO
-            self.stereo_flags |= cv2.fisheye.CALIB_ZERO_TANGENT_DIST
-            # self.stereo_flags |= cv2.fisheye.CALIB_RATIONAL_MODEL
-            # self.stereo_flags |= cv2.fisheye.CALIB_SAME_FOCAL_LENGTH
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_K3
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_K4
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_K5
+            # self.stereo_flags |= cv2.CALIB_FIX_INTRINSIC
+            # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+            self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
+            # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
+            self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
+            self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
+            # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
+            # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
+            self.stereo_flags |= cv2.CALIB_FIX_K3
+            self.stereo_flags |= cv2.CALIB_FIX_K4
+            self.stereo_flags |= cv2.CALIB_FIX_K5
 
         self.camera_model = self.stereo_camera_calibrate(img_shape)
         # print(self.camera_model)
@@ -1863,35 +1864,35 @@ class StereoCalibration(object):
                 img_r = cv2.cvtColor(gray_r, cv2.COLOR_GRAY2BGR)
 
             else:
-                img_l = cv2.fisheye.imread(images_left[i])
-                img_r = cv2.fisheye.imread(images_right[i])
+                img_l = cv2.imread(images_left[i])
+                img_r = cv2.imread(images_right[i])
                 gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
                 gray_r = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)
 
-            # gray_l = cv2.fisheye.adaptiveThreshold(gray_l, 255, cv2.fisheye.ADAPTIVE_THRESH_MEAN_C, cv2.fisheye.THRESH_BINARY, 25, -5)
-            # gray_r = cv2.fisheye.adaptiveThreshold(gray_r, 255, cv2.fisheye.ADAPTIVE_THRESH_MEAN_C, cv2.fisheye.THRESH_BINARY, 25, -5)
-            # ret, gray_l = cv2.fisheye.threshold(gray_l, 40, 200, cv2.fisheye.THRESH_BINARY)
-            # ret, gray_r = cv2.fisheye.threshold(gray_r, 40, 200, cv2.fisheye.THRESH_BINARY)
+            # gray_l = cv2.adaptiveThreshold(gray_l, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
+            # gray_r = cv2.adaptiveThreshold(gray_r, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
+            # ret, gray_l = cv2.THRESHold(gray_l, 40, 200, cv2.THRESH_BINARY)
+            # ret, gray_r = cv2.THRESHold(gray_r, 40, 200, cv2.THRESH_BINARY)
 
             # Find the chess board corners
             if (select_detect_pattern == 1):
-                # flags = cv2.fisheye.CALIB_CB_ADAPTIVE_THRESH | cv2.fisheye.CALIB_CB_NORMALIZE_IMAGE | cv2.fisheye.CALIB_CB_FILTER_QUADS
-                ret_l, corners_l = cv2.fisheye.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), None)
-                ret_r, corners_r = cv2.fisheye.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), None)
-                # ret_l, corners_l = cv2.fisheye.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), flags = cv2.fisheye.CALIB_CB_ADAPTIVE_THRESH  )
-                # ret_r, corners_r = cv2.fisheye.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), flags=cv2.fisheye.CALIB_CB_ADAPTIVE_THRESH)
+                # flags = cv2.CALIB_CB_ADAPTIVE_THRESH | cv2.CALIB_CB_NORMALIZE_IMAGE | cv2.CALIB_CB_FILTER_QUADS
+                ret_l, corners_l = cv2.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), None)
+                ret_r, corners_r = cv2.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), None)
+                # ret_l, corners_l = cv2.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), flags = cv2.CALIB_CB_ADAPTIVE_THRESH  )
+                # ret_r, corners_r = cv2.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), flags=cv2.CALIB_CB_ADAPTIVE_THRESH)
             else:
-                blobPar = cv2.fisheye.SimpleBlobDetector_Params()
+                blobPar = cv2.SimpleBlobDetector_Params()
                 blobPar.maxArea = 1000
                 blobPar.minArea = 20
                 # blobPar.minDistBetweenBlobs = 300
-                blobDet = cv2.fisheye.SimpleBlobDetector_create(blobPar)
+                blobDet = cv2.SimpleBlobDetector_create(blobPar)
 
-                # flags = cv2.fisheye.CALIB_CB_SYMMETRIC_GRID + cv2.fisheye.CALIB_CB_CLUSTERING)
-                ret_l, corners_l = cv2.fisheye.findCirclesGrid(gray_l, (marker_point_x, marker_point_y),
-                                                       flags=cv2.fisheye.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
-                ret_r, corners_r = cv2.fisheye.findCirclesGrid(gray_r, (marker_point_x, marker_point_y),
-                                                       flags=cv2.fisheye.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
+                # flags = cv2.CALIB_CB_SYMMETRIC_GRID + cv2.CALIB_CB_CLUSTERING)
+                ret_l, corners_l = cv2.findCirclesGrid(gray_l, (marker_point_x, marker_point_y),
+                                                       flags=cv2.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
+                ret_r, corners_r = cv2.findCirclesGrid(gray_r, (marker_point_x, marker_point_y),
+                                                       flags=cv2.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
 
             print((images_left[i], ret_l))
             print((images_right[i], ret_r))
@@ -1905,26 +1906,26 @@ class StereoCalibration(object):
                 # self.objpoints_center.append(self.objp_center)
 
                 if (select_detect_pattern == 1):
-                    rt = cv2.fisheye.cornerSubPix(gray_l, corners_l, (11, 11), (-1, -1), self.criteria)
+                    rt = cv2.cornerSubPix(gray_l, corners_l, (11, 11), (-1, -1), self.criteria)
                 self.imgpoints_l.append(corners_l)
 
                 # Draw and display the corners
-                ret_l = cv2.fisheye.drawChessboardCorners(img_l, (marker_point_x, marker_point_y), corners_l, ret_l)
+                ret_l = cv2.drawChessboardCorners(img_l, (marker_point_x, marker_point_y), corners_l, ret_l)
 
                 if (enable_debug_detect_pattern_from_image == 1):
-                    cv2.fisheye.imshow(str(i + 1) + 'st image  _ ' + images_left[i], img_l)
-                    cv2.fisheye.waitKey(500)
+                    cv2.imshow(str(i + 1) + 'st image  _ ' + images_left[i], img_l)
+                    cv2.waitKey(500)
 
                 if (select_detect_pattern == 1):
-                    rt = cv2.fisheye.cornerSubPix(gray_r, corners_r, (11, 11), (-1, -1), self.criteria)
+                    rt = cv2.cornerSubPix(gray_r, corners_r, (11, 11), (-1, -1), self.criteria)
                 self.imgpoints_r.append(corners_r)
 
                 # Draw and display the corners
-                ret_r = cv2.fisheye.drawChessboardCorners(img_r, (marker_point_x, marker_point_y), corners_r, ret_r)
+                ret_r = cv2.drawChessboardCorners(img_r, (marker_point_x, marker_point_y), corners_r, ret_r)
 
                 if (enable_debug_detect_pattern_from_image == 1):
-                    cv2.fisheye.imshow(str(i + 1) + 'st image  _ ' + images_right[i], img_r)
-                    cv2.fisheye.waitKey(0)
+                    cv2.imshow(str(i + 1) + 'st image  _ ' + images_right[i], img_r)
+                    cv2.waitKey(0)
 
             print(gray_l.shape[::-1])
             img_shape = gray_r.shape[::-1]
@@ -1939,42 +1940,69 @@ class StereoCalibration(object):
             flags = opt1
         else:
             flags = 0
-            # tflags |= cv2.fisheye.CALIB_FIX_INTRINSIC
-            # tflags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
+            # flags |= cv2.fisheye.CALIB_FIX_INTRINSIC
+            # flags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
             flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
-            # tflags |= cv2.fisheye.CALIB_FIX_FOCAL_LENGTH
-            flags |= cv2.fisheye.CALIB_FIX_ASPECT_RATIO
-            flags |= cv2.fisheye.CALIB_ZERO_TANGENT_DIST
-            # tflags |= cv2.fisheye.CALIB_RATIONAL_MODEL
-            # tflags |= cv2.fisheye.CALIB_SAME_FOCAL_LENGTH
-            flags |= cv2.fisheye.CALIB_FIX_K3
-            flags |= cv2.fisheye.CALIB_FIX_K4
-            flags |= cv2.fisheye.CALIB_FIX_K5
+            flags |= cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC
+            flags |= cv2.fisheye.CALIB_CHECK_COND
+            flags |= cv2.fisheye.CALIB_FIX_SKEW
+            #flags |= cv2.fisheye.CALIB_FIX_K1
+            #flags |= cv2.fisheye.CALIB_FIX_K2
+            #flags |= cv2.fisheye.CALIB_FIX_K3
+            #flags |= cv2.fisheye.CALIB_FIX_K4
+
+        flags = 0
+        # flags |= cv2.fisheye.CALIB_FIX_INTRINSIC
+        # flags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
+        flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
+        flags |= cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC
+        flags |= cv2.fisheye.CALIB_CHECK_COND
+        flags |= cv2.fisheye.CALIB_FIX_SKEW
+        #flags |= cv2.fisheye.CALIB_FIX_K1
+        #flags |= cv2.fisheye.CALIB_FIX_K2
+        #flags |= cv2.fisheye.CALIB_FIX_K3
+        #flags |= cv2.fisheye.CALIB_FIX_K4
 
         # default param (if you need to change default param, please change this value)
-        camera_matrix = np.zeros((3, 3), np.float32)
-        camera_matrix[0][0] = default_camera_param_f
-        camera_matrix[1][1] = default_camera_param_f
-        camera_matrix[0][2] = default_camera_param_cx
-        camera_matrix[1][2] = default_camera_param_cy
-        camera_matrix[2][2] = 1.0
+        camera_matrix_l = np.zeros((3, 3), np.float64)
+        camera_matrix_l[0][0] = default_camera_param_f
+        camera_matrix_l[1][1] = default_camera_param_f
+        camera_matrix_l[0][2] = default_camera_param_cx
+        camera_matrix_l[1][2] = default_camera_param_cy
+        camera_matrix_l[2][2] = 1.0
 
-        dist_coef = np.zeros((1, 5), np.float32)
-        dist_coef[0][0] = default_camera_param_k1
-        dist_coef[0][1] = default_camera_param_k2
-        dist_coef[0][2] = default_camera_param_k3
-        dist_coef[0][3] = default_camera_param_k4
-        dist_coef[0][4] = default_camera_param_k5
+        camera_matrix_r = np.zeros((3, 3), np.float64)
+        camera_matrix_r[0][0] = default_camera_param_f
+        camera_matrix_r[1][1] = default_camera_param_f
+        camera_matrix_r[0][2] = default_camera_param_cx
+        camera_matrix_r[1][2] = default_camera_param_cy
+        camera_matrix_r[2][2] = 1.0
 
-        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f, %.8f]' % (camera_matrix[0][0], camera_matrix[1][1], camera_matrix[0][2], camera_matrix[1][2], dist_coef[0][0], dist_coef[0][1], dist_coef[0][2], dist_coef[0][3], dist_coef[0][4]))
-        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f, %.8f]' % (camera_matrix[0][0], camera_matrix[1][1], camera_matrix[0][2], camera_matrix[1][2], dist_coef[0][0], dist_coef[0][1], dist_coef[0][2], dist_coef[0][3], dist_coef[0][4]))
+        dist_coef_l = np.zeros((4, 1), np.float64)
+        dist_coef_l[0] = default_camera_param_k1
+        dist_coef_l[1] = default_camera_param_k2
+        dist_coef_l[2] = default_camera_param_k3
+        dist_coef_l[3] = default_camera_param_k4
 
-        rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrateCamera(self.objpoints, self.imgpoints_l, img_shape,
-                                                                     camera_matrix,
-                                                                     dist_coef, flags=flags)
-        rt2, self.M2, self.d2, self.r2, self.t2 = cv2.fisheye.calibrateCamera(self.objpoints, self.imgpoints_r, img_shape,
-                                                                      camera_matrix,
-                                                                      dist_coef, flags=flags)
+        dist_coef_r = np.zeros((4, 1), np.float64)
+        dist_coef_r[0] = default_camera_param_k1
+        dist_coef_r[1] = default_camera_param_k2
+        dist_coef_r[2] = default_camera_param_k3
+        dist_coef_r[3] = default_camera_param_k4
+
+        #criteria= (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 1e-6)
+
+#        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f]' % (camera_matrix_l[0][0], camera_matrix_l[1][1], camera_matrix_l[0][2], camera_matrix_l[1][2], dist_coef_l[0][0], dist_coef_l[0][1], dist_coef_l[0][2], dist_coef_l[0][3]))
+#        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f]' % (camera_matrix_r[0][0], camera_matrix_r[1][1], camera_matrix_r[0][2], camera_matrix_r[1][2], dist_coef_r[0][0], dist_coef_r[0][1], dist_coef_r[0][2], dist_coef_r[0][3]))
+
+        objpoints2 = np.expand_dims(np.asarray(self.objpoints), -2)
+        rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrate(objpoints2, self.imgpoints_l, img_shape,
+                                                                     camera_matrix_l,
+                                                                     dist_coef_l, flags=flags)
+        # objpoints2 = np.expand_dims(np.asarray(self.objpoints), -2)
+        rt2, self.M2, self.d2, self.r2, self.t2 = cv2.fisheye.calibrate(objpoints2, self.imgpoints_r, img_shape,
+                                                                      camera_matrix_r,
+                                                                      dist_coef_r, flags=flags)
 
         print("=" * 50)
         print('Mono_Intrinsic_Left', *np.round(self.M1, 5), sep='\n')
@@ -1996,9 +2024,9 @@ class StereoCalibration(object):
         print('RMSE_Left', rt)
         print('RMSE_Right', rt2)
         print("=" * 50)
-        single_rms_l, _, _ = self.reprojection_error(self.objpoints, self.imgpoints_l, self.r1, self.t1, self.M1,
+        single_rms_l, _, _ = self.reprojection_error(objpoints2, self.imgpoints_l, self.r1, self.t1, self.M1,
                                                      self.d1)
-        single_rms_r, _, _ = self.reprojection_error(self.objpoints, self.imgpoints_r, self.r2, self.t2, self.M2,
+        single_rms_r, _, _ = self.reprojection_error(objpoints2, self.imgpoints_r, self.r2, self.t2, self.M2,
                                                      self.d2)
         print('RMSE_Left_verify', single_rms_l)
         print('RMSE_Right_verify', single_rms_r)
@@ -2024,15 +2052,25 @@ class StereoCalibration(object):
             # self.stereo_flags |= cv2.fisheye.CALIB_FIX_INTRINSIC
             # self.stereo_flags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
             self.stereo_flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
-            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_FOCAL_LENGTH
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_ASPECT_RATIO
-            self.stereo_flags |= cv2.fisheye.CALIB_ZERO_TANGENT_DIST
-            # self.stereo_flags |= cv2.fisheye.CALIB_RATIONAL_MODEL
-            # self.stereo_flags |= cv2.fisheye.CALIB_SAME_FOCAL_LENGTH
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_K3
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_K4
-            self.stereo_flags |= cv2.fisheye.CALIB_FIX_K5
+            self.stereo_flags |= cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC
+            self.stereo_flags |= cv2.fisheye.CALIB_CHECK_COND
+            self.stereo_flags |= cv2.fisheye.CALIB_FIX_SKEW
+            #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K1
+            #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K2
+            #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K3
+            #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K4
 
+        self.stereo_flags = 0
+        # self.stereo_flags |= cv2.fisheye.CALIB_FIX_INTRINSIC
+        # self.stereo_flags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
+        self.stereo_flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
+        self.stereo_flags |= cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC
+        self.stereo_flags |= cv2.fisheye.CALIB_CHECK_COND
+        self.stereo_flags |= cv2.fisheye.CALIB_FIX_SKEW
+        #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K1
+        #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K2
+        #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K3
+        #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K4
 
         self.camera_model = self.stereo_camera_calibrate(img_shape)
         # print(self.camera_model)
@@ -2055,95 +2093,33 @@ class StereoCalibration(object):
 
     def stereo_camera_calibrate(self, dims):
         # flags = 0
-        # #flags |= cv2.fisheye.CALIB_FIX_INTRINSIC
-        # # flags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
-        # flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
-        # #flags |= cv2.fisheye.CALIB_FIX_FOCAL_LENGTH
-        # #flags |= cv2.fisheye.CALIB_FIX_ASPECT_RATIO
-        # flags |= cv2.fisheye.CALIB_ZERO_TANGENT_DIST
-        # # flags |= cv2.fisheye.CALIB_RATIONAL_MODEL
-        # #flags |= cv2.fisheye.CALIB_SAME_FOCAL_LENGTH
-        # flags |= cv2.fisheye.CALIB_FIX_K3
-        # flags |= cv2.fisheye.CALIB_FIX_K4
-        # flags |= cv2.fisheye.CALIB_FIX_K5
+        # #flags |= cv2.CALIB_FIX_INTRINSIC
+        # # flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+        # flags |= cv2.CALIB_USE_INTRINSIC_GUESS
+        # #flags |= cv2.CALIB_FIX_FOCAL_LENGTH
+        # #flags |= cv2.CALIB_FIX_ASPECT_RATIO
+        # flags |= cv2.CALIB_ZERO_TANGENT_DIST
+        # # flags |= cv2.CALIB_RATIONAL_MODEL
+        # #flags |= cv2.CALIB_SAME_FOCAL_LENGTH
+        # flags |= cv2.CALIB_FIX_K3
+        # flags |= cv2.CALIB_FIX_K4
+        # flags |= cv2.CALIB_FIX_K5
 
-        stereocalib_criteria = (cv2.fisheye.TERM_CRITERIA_MAX_ITER +
-                                cv2.fisheye.TERM_CRITERIA_EPS, 100, 1e-5)
-        lgit_criteria = (cv2.fisheye.TERM_CRITERIA_EPS + cv2.fisheye.TERM_CRITERIA_MAX_ITER, 30, 0.01)
-        lip_criteria = (cv2.fisheye.TERM_CRITERIA_MAX_ITER    , 1, 0.5)
+        stereocalib_criteria = (cv2.TERM_CRITERIA_MAX_ITER +
+                                cv2.TERM_CRITERIA_EPS, 100, 1e-5)
+        lgit_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.01)
+        lip_criteria = (cv2.TERM_CRITERIA_MAX_ITER    , 1, 0.5)
 
-        # stereo calibration test code for varify
-        # ret, Ml, dl, Mr, dr, R, T, E, F = cv2.fisheye.stereoCalibrate(
-        #     self.objpoints, self.imgpoints_l,
-        #     self.imgpoints_r, self.M1, self.d1, self.M2, self.d2, dims,
-        #     criteria=lgit_criteria, flags=self.stereo_flags)
-        # R = np.array([[0.99997219, -0.00162369, -0.00727876],
-        #                   [0.00169173, 0.99995485, 0.00935097],
-        #                   [0.00726325, -0.00936303, 0.99992979]])
-        # T = np.array([-0.09232336, -0.1000415491683, -0.00071886])
-        #
-        # Ml = np.array([[1496.71883,    0.,       641.60057],
-        #             [0.,      1496.71883,  490.26952],
-        #             [0., 0., 1.]])
-        # dl = np.array([-0.11003, -0.29897,    0.,    0.,     0.])
-        # Mr = np.array([[1494.86203,   0.,       652.97403],
-        #             [0.   ,   1494.86203,  472.24791],
-        #             [0., 0., 1.]])
-        # dr = np.array([-0.11309, -0.25242, 0, 0, 0])
-        #
-        # print('beforeRT', R,'\n', T[0], T[1],T[2])
-        #
-        # self.stereo_flags = cv2.fisheye.CALIB_USE_EXTRINSIC_GUESS
-        # ret2, Ml2, dl2, Mr2, dr2, R2, T2, E2, F2, perViewErrors = cv2.fisheye.stereoCalibrateExtended(
-        #     self.objpoints, self.imgpoints_l,
-        #     self.imgpoints_r, Ml, dl, Mr, dr, dims, R, T,
-        #     criteria=lgit_criteria, flags=self.stereo_flags)
-        # print('perViewErrors', perViewErrors)
-        # print('userRT', R,'\n', T[0], T[1],T[2])
-        # print('Ml', Ml2, dl2, 'M2' , Mr2, dr2, '\nret_RT', R2,'\n', T2[0], T2[1],T2[2] )
-        # print('*'*30, 'rms3_2', ret2 )
+        objpoints2 = np.expand_dims(np.asarray(self.objpoints), -2)
 
         (major, minor, mdumuy) = check_version_of_opencv()
         print('opencv', major, minor, mdumuy)
-        print(major == 3 , minor >= 4 , mdumuy >= 1)
-        if((major >= 4) or (major == 3 and minor >= 4 and mdumuy >= 1)):
-            #self.stereo_flags |= cv2.fisheye.CALIB_USE_EXTRINSIC_GUESS
-            print(self.stereo_flags & cv2.fisheye.CALIB_USE_EXTRINSIC_GUESS)
-            if((self.stereo_flags & cv2.fisheye.CALIB_USE_EXTRINSIC_GUESS) > 0):
-                # print("OK")
-                userR = np.array([[0.99999774, -0.000082858249, -0.0021352633],
-                                  [0.000088781271, 0.99999613, 0.0027739638],
-                                  [0.0021350251, -0.0027741471, 0.99992979]])
-                userT = np.array([-0.091707, -0.000120558, 0.00195439])
-                print(self.uT31)
-                #print(type(userR), userR.shape, type(userT), userT.shape)
-                print()
-                #print(type(self.uR33), type(userR))
-                #print(self.uR33.shape, userR.shape)
-                #print(userT.shape)
-                print(self.uR33)
-                print(self.uR33.shape, self.uT31.shape)
-                print(self.stereo_flags)
-                ret_rp, Ml, dl, Mr, dr, R, T, E, F, perViewErrors = cv2.fisheye.stereoCalibrateExtended(self.objpoints, self.imgpoints_l,self.imgpoints_r,
-                            self.M1, self.d1, self.M2, self.d2, dims,
-                            userR, userT, criteria=lgit_criteria, flags=self.stereo_flags)
-                print('perViewErrors', perViewErrors)
-                #print('userRT', userR, userT)
 
-            else:
-                # print("NG")
-                ret_rp, Ml, dl, Mr, dr, R, T, E, F = cv2.fisheye.stereoCalibrate(
-                    self.objpoints, self.imgpoints_l,
-                    self.imgpoints_r, self.M1, self.d1, self.M2,
-                    self.d2, dims,
-                    criteria=lgit_criteria, flags=self.stereo_flags)
-
-        else:
-            ret_rp, Ml, dl, Mr, dr, R, T, E, F = cv2.fisheye.stereoCalibrate(
-                self.objpoints, self.imgpoints_l,
-                self.imgpoints_r, self.M1, self.d1, self.M2,
-                self.d2, dims,
-                criteria=lgit_criteria, flags=self.stereo_flags)
+        ret_rp, Ml, dl, Mr, dr, R, T = cv2.fisheye.stereoCalibrate(
+            objpoints2, self.imgpoints_l,
+            self.imgpoints_r, self.M1, self.d1, self.M2,
+            self.d2, dims,
+            criteria=lgit_criteria, flags=self.stereo_flags)
 
         # print(type(T),T.shape)
         T =  T.reshape(3,1)
@@ -2169,26 +2145,26 @@ class StereoCalibration(object):
 
         #plus focal length, Extrinsic_Left to Right
         # print('R5', R, '\nT5', T)
-        modify_value_from_json(self.cal_path, "stereo_config", Ml, dl, Mr, dr, R, T, dims, ret_rp, E, F)
+        modify_value_from_json(self.cal_path, "stereo_config", Ml, dl, Mr, dr, R, T, dims, ret_rp)
         # print('R6', R, '\nT6', T)
 
         print("=" * 50)
-        print('E\n[%.8f, %.8f, %.8f]\n[%.8f, %.8f, %.8f]\n[%.8f, %.8f, %.8f]'%(E[0][0],E[0][1],E[0][2],E[1][0],E[1][1],E[1][2],E[2][0],E[2][1],E[2][2]))
-        print('F\n[%.8f, %.8f, %.8f]\n[%.8f, %.8f, %.8f]\n[%.8f, %.8f, %.8f]'%(F[0][0],F[0][1],F[0][2],F[1][0],F[1][1],F[1][2],F[2][0],F[2][1],F[2][2]))
+        #print('E\n[%.8f, %.8f, %.8f]\n[%.8f, %.8f, %.8f]\n[%.8f, %.8f, %.8f]'%(E[0][0],E[0][1],E[0][2],E[1][0],E[1][1],E[1][2],E[2][0],E[2][1],E[2][2]))
+        #print('F\n[%.8f, %.8f, %.8f]\n[%.8f, %.8f, %.8f]\n[%.8f, %.8f, %.8f]'%(F[0][0],F[0][1],F[0][2],F[1][0],F[1][1],F[1][2],F[2][0],F[2][1],F[2][2]))
 
         print('')
         camera_param = list([('M1', Ml), ('M2', Mr), ('dist1', dl),('dist2', dr),
-                             ('R', R), ('T', T), ('E', E), ('F', F)])
+                             ('R', R), ('T', T)])
         self.Ml = Ml
         self.dl = dl
         self.Mr = Mr
         self.dr = dr
         self.R = R
         self.T = T
-        self.E = E
-        self.F = F
+        #self.E = E
+        #self.F = F
 
-        cv2.fisheye.destroyAllWindows()
+        cv2.destroyAllWindows()
         return camera_param
 
 
@@ -2205,17 +2181,17 @@ class StereoCalibration(object):
         gray_l = img_l
         gray_r = img_r
 
-        # ret, gray_l = cv2.fisheye.threshold(gray_l, 50, 200, cv2.fisheye.THRESH_BINARY)
-        # ret, gray_r = cv2.fisheye.threshold(gray_r, 50, 200, cv2.fisheye.THRESH_BINARY)
-        # gray_l = cv2.fisheye.adaptiveThreshold(gray_l, 255, cv2.fisheye.ADAPTIVE_THRESH_MEAN_C, cv2.fisheye.THRESH_BINARY, 25, -5)
-        # gray_r = cv2.fisheye.adaptiveThreshold(gray_r, 255, cv2.fisheye.ADAPTIVE_THRESH_MEAN_C, cv2.fisheye.THRESH_BINARY, 25, -5)
+        # ret, gray_l = cv2.THRESHold(gray_l, 50, 200, cv2.THRESH_BINARY)
+        # ret, gray_r = cv2.THRESHold(gray_r, 50, 200, cv2.THRESH_BINARY)
+        # gray_l = cv2.adaptiveThreshold(gray_l, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
+        # gray_r = cv2.adaptiveThreshold(gray_r, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
         # Find the chess board corners
         if (select_detect_pattern == 1):
-            ret_l, corners_l = cv2.fisheye.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), flags = cv2.fisheye.CALIB_CB_ADAPTIVE_THRESH  )
-            ret_r, corners_r = cv2.fisheye.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), flags=cv2.fisheye.CALIB_CB_ADAPTIVE_THRESH)
+            ret_l, corners_l = cv2.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), flags = cv2.CALIB_CB_ADAPTIVE_THRESH  )
+            ret_r, corners_r = cv2.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), flags=cv2.CALIB_CB_ADAPTIVE_THRESH)
         else:
-            ret_l, corners_l = cv2.fisheye.findCirclesGrid(gray_l, (marker_point_x, marker_point_y),  flags=cv2.fisheye.CALIB_CB_SYMMETRIC_GRID)
-            ret_r, corners_r = cv2.fisheye.findCirclesGrid(gray_r, (marker_point_x, marker_point_y),  flags=cv2.fisheye.CALIB_CB_SYMMETRIC_GRID)
+            ret_l, corners_l = cv2.findCirclesGrid(gray_l, (marker_point_x, marker_point_y),  flags=cv2.CALIB_CB_SYMMETRIC_GRID)
+            ret_r, corners_r = cv2.findCirclesGrid(gray_r, (marker_point_x, marker_point_y),  flags=cv2.CALIB_CB_SYMMETRIC_GRID)
 
         #print((images_left[i], ret_l))
         #print((images_right[i], ret_r))
@@ -2226,24 +2202,24 @@ class StereoCalibration(object):
             local_objpoints.append(self.objp)
 
             if (select_detect_pattern == 1):
-                rt = cv2.fisheye.cornerSubPix(gray_l, corners_l, (11, 11), (-1, -1), self.criteria)
+                rt = cv2.cornerSubPix(gray_l, corners_l, (11, 11), (-1, -1), self.criteria)
             local_imgpoints_l.append(corners_l)
 
             if (enable_debug_detect_pattern_from_image == 1):
                 # Draw and display the corners
-                ret_l = cv2.fisheye.drawChessboardCorners(img_l, (marker_point_x, marker_point_y), corners_l, ret_l)
-                cv2.fisheye.imshow("Left find", img_l)
-                cv2.fisheye.waitKey(500)
+                ret_l = cv2.drawChessboardCorners(img_l, (marker_point_x, marker_point_y), corners_l, ret_l)
+                cv2.imshow("Left find", img_l)
+                cv2.waitKey(500)
 
             if (select_detect_pattern == 1):
-                rt = cv2.fisheye.cornerSubPix(gray_r, corners_r, (11, 11), (-1, -1), self.criteria)
+                rt = cv2.cornerSubPix(gray_r, corners_r, (11, 11), (-1, -1), self.criteria)
             local_imgpoints_r.append(corners_r)
 
             if (enable_debug_detect_pattern_from_image == 1):
                 # Draw and display the corners
-                ret_r = cv2.fisheye.drawChessboardCorners(img_r, (marker_point_x, marker_point_y), corners_r, ret_r)
-                cv2.fisheye.imshow("Right find", img_r)
-                cv2.fisheye.waitKey(500)
+                ret_r = cv2.drawChessboardCorners(img_r, (marker_point_x, marker_point_y), corners_r, ret_r)
+                cv2.imshow("Right find", img_r)
+                cv2.waitKey(500)
 
         #print(gray_l.shape[::-1], type(gray_l.shape[::-1]))
         #img_shape = gray_r.shape[::-1]
@@ -2258,8 +2234,8 @@ class StereoCalibration(object):
 
     def stereo_rectify(self, img_shape, camera_matrix_l, dist_coeffs_l, camera_matrix_r, dist_coeffs_r, R, T, filename_l, filename_r):
         print("-> process of sreteo rectify")
-        # img_l = cv2.fisheye.imread('./image33/LEFT/LEFT_Step_112.png')
-        # img_r = cv2.fisheye.imread('./image33/RIGHT/RIGHT_Step_112.png')
+        # img_l = cv2.imread('./image33/LEFT/LEFT_Step_112.png')
+        # img_r = cv2.imread('./image33/RIGHT/RIGHT_Step_112.png')
         #filename_l = 'D:/data/Calibration/Right_Zig/ALL/LEFT/CaptureImage_Left_005_01.raw'
         #filename_r = 'D:/data/Calibration/Right_Zig/ALL/RIGHT/CaptureImage_Right_005_01.raw'
         print(filename_l, '\n',filename_r)
@@ -2282,14 +2258,14 @@ class StereoCalibration(object):
             img_r = cv2.cvtColor(gray_r, cv2.COLOR_GRAY2BGR)
 
         else:
-            img_l = cv2.fisheye.imread(filename_l)
-            img_r = cv2.fisheye.imread(filename_r)
+            img_l = cv2.imread(filename_l)
+            img_r = cv2.imread(filename_r)
             gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
             gray_r = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)
-        # gray_l = cv2.fisheye.adaptiveThreshold(gray_l, 255, cv2.fisheye.ADAPTIVE_THRESH_MEAN_C, cv2.fisheye.THRESH_BINARY, 25, -5)
-        # gray_r = cv2.fisheye.adaptiveThreshold(gray_r, 255, cv2.fisheye.ADAPTIVE_THRESH_MEAN_C, cv2.fisheye.THRESH_BINARY, 25, -5)
-        # ret, gray_l = cv2.fisheye.threshold(gray_l, 40, 200, cv2.fisheye.THRESH_BINARY)
-        # ret, gray_r = cv2.fisheye.threshold(gray_r, 40, 200, cv2.fisheye.THRESH_BINARY)
+        # gray_l = cv2.adaptiveThreshold(gray_l, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
+        # gray_r = cv2.adaptiveThreshold(gray_r, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
+        # ret, gray_l = cv2.THRESHold(gray_l, 40, 200, cv2.THRESH_BINARY)
+        # ret, gray_r = cv2.THRESHold(gray_r, 40, 200, cv2.THRESH_BINARY)
 
         # STAGE 4: rectification of images (make scan lines align left <-> right
         # N.B.  "alpha=0 means that the rectified images are zoomed and shifted so that
@@ -2298,7 +2274,7 @@ class StereoCalibration(object):
         # from the cameras are retained in the rectified images (no source image pixels are lost)." - ?
         RL, RR, PL, PR, Q, validPixROI1, validPixROI2 = cv2.fisheye.stereoRectify(camera_matrix_l, dist_coeffs_l,
                                                                           camera_matrix_r, dist_coeffs_r,
-                                                                          img_shape, R, T, alpha=-1, flags=cv2.fisheye.CALIB_ZERO_DISPARITY);
+                                                                          img_shape, R, T, alpha=-1, flags=cv2.CALIB_ZERO_DISPARITY);
 
         # compute the pixel mappings to the rectified versions of the images
         print("*" * 50)
@@ -2363,8 +2339,8 @@ class StereoCalibration(object):
         _, rvec_l, tvec_l, _ = cv2.fisheye.solvePnPRansac(self.objpoints[0], self.imgpoints_l[0], camera_matrix_l, dist_coeffs_l)
         _, rvec_r, tvec_r, _ = cv2.fisheye.solvePnPRansac(self.objpoints[0], self.imgpoints_r[0], camera_matrix_r, dist_coeffs_r)
         t2 = np.array([[0],[0],[0]])
-        tR, tT, _ , _ ,_ , _ , _ , _, _, _= cv2.fisheye.composeRT( rvec_l, tvec_l, cv2.fisheye.Rodrigues(RL)[0], t2)
-        tR2, tT2, _, _, _, _, _, _, _, _ = cv2.fisheye.composeRT(rvec_r, tvec_r, cv2.fisheye.Rodrigues(RR)[0], t2)
+        tR, tT, _ , _ ,_ , _ , _ , _, _, _= cv2.fisheye.composeRT( rvec_l, tvec_l, cv2.Rodrigues(RL)[0], t2)
+        tR2, tT2, _, _, _, _, _, _, _, _ = cv2.fisheye.composeRT(rvec_r, tvec_r, cv2.Rodrigues(RR)[0], t2)
 
         # rp_l, _ = cv2.fisheye.projectPoints(self.objpoints[0], rvec_l, tvec_l, tmat, dist_coeffs_l)
         rp_l, _ = cv2.fisheye.projectPoints(self.objpoints[0], tR, tT, tmat, tmat_d)
@@ -2373,7 +2349,7 @@ class StereoCalibration(object):
         # print('rp_r', rp_r)
 
         # cvUndistortPoints(_pts, _pts, cameraMatrix, distCoeffs, R, newCameraMatrix);
-        cv2.fisheye.waitKey(0)
+        cv2.waitKey(0)
 
 
         t_focal = PR[0][0]
@@ -2390,9 +2366,9 @@ class StereoCalibration(object):
         # lines1 = lines1.reshape(-1, 3)
         # img5, img6 = self.draw_epipolar_lines(gray_l, gray_r, lines1, pts1, pts2)
         #
-        # cv2.fisheye.imshow("img5 LEFT Camera rectification Input", img5);
-        # cv2.fisheye.imshow("img5 RIGHT Camera rectification Input", img6);
-        # cv2.fisheye.waitKey(500)
+        # cv2.imshow("img5 LEFT Camera rectification Input", img5);
+        # cv2.imshow("img5 RIGHT Camera rectification Input", img6);
+        # cv2.waitKey(500)
         #
         # # Find epilines corresponding to points in left image (first image) and
         # # drawing its lines on right image
@@ -2400,9 +2376,9 @@ class StereoCalibration(object):
         # lines2 = lines2.reshape(-1, 3)
         # img3, img4 = self.draw_epipolar_lines(gray_r, gray_l, lines2, pts2, pts1)
         #
-        # cv2.fisheye.imshow("img4 LEFT Camera rectification Input", img4);
-        # cv2.fisheye.imshow("img4 RIGHT Camera rectification Input", img3);
-        # cv2.fisheye.waitKey(0)
+        # cv2.imshow("img4 LEFT Camera rectification Input", img4);
+        # cv2.imshow("img4 RIGHT Camera rectification Input", img3);
+        # cv2.waitKey(0)
 
         if(enable_debug_dispatiry_estimation_display == 2):
             # rectified image
@@ -2414,9 +2390,9 @@ class StereoCalibration(object):
             lines1 = lines1.reshape(-1, 3)
             img5, img6 = self.draw_epipolar_lines(undistorted_rectifiedL, undistorted_rectifiedR, lines1, pts1, pts2)
 
-            cv2.fisheye.imshow("img5 LEFT Camera rectification Input", img5);
-            cv2.fisheye.imshow("img5 RIGHT Camera rectification Input", img6);
-            cv2.fisheye.waitKey(500)
+            cv2.imshow("img5 LEFT Camera rectification Input", img5);
+            cv2.imshow("img5 RIGHT Camera rectification Input", img6);
+            cv2.waitKey(500)
 
             # Find epilines corresponding to points in left image (first image) and
             # drawing its lines on right image
@@ -2424,12 +2400,12 @@ class StereoCalibration(object):
             lines2 = lines2.reshape(-1, 3)
             img3, img4 = self.draw_epipolar_lines(undistorted_rectifiedR, undistorted_rectifiedL, lines2, pts2, pts1)
 
-            cv2.fisheye.imshow("img4 LEFT Camera rectification Input", img4);
-            cv2.fisheye.imshow("img4 RIGHT Camera rectification Input", img3);
-            cv2.fisheye.waitKey(0)
+            cv2.imshow("img4 LEFT Camera rectification Input", img4);
+            cv2.imshow("img4 RIGHT Camera rectification Input", img3);
+            cv2.waitKey(0)
 
-        # cv2.fisheye.imshow("LEFT Camera rectification Input", undistorted_rectifiedL);
-        # cv2.fisheye.imshow("RIGHT Camera rectification Input", undistorted_rectifiedR);
+        # cv2.imshow("LEFT Camera rectification Input", undistorted_rectifiedL);
+        # cv2.imshow("RIGHT Camera rectification Input", undistorted_rectifiedR);
         self.calc_distance_using_stereo_point(t_lpoint, t_rpoint, PR)
         self.depth_using_stereo_param(undistorted_rectifiedL,undistorted_rectifiedR)
         return mapL1, mapL2, mapR1, mapR2, RL, PL, RR, PR
@@ -2444,7 +2420,7 @@ class StereoCalibration(object):
         # from the cameras are retained in the rectified images (no source image pixels are lost)." - ?
         RL, RR, PL, PR, Q, validPixROI1, validPixROI2 = cv2.fisheye.stereoRectify(camera_matrix_l, dist_coeffs_l,
                                                                           camera_matrix_r, dist_coeffs_r,
-                                                                          img_shape, R, T, alpha=-1, flags=cv2.fisheye.CALIB_ZERO_DISPARITY);
+                                                                          img_shape, R, T, alpha=-1, flags=cv2.CALIB_ZERO_DISPARITY);
 
         # compute the pixel mappings to the rectified versions of the images
         print("*" * 50)
@@ -2537,9 +2513,9 @@ class StereoCalibration(object):
             _, rvec_r, tvec_r, _ = cv2.fisheye.solvePnPRansac(tobjrefpoint[i], t_list_right[i], tmat, tmat_d)
             # print(rvec_l, rvec_r, tvec_l, tvec_r)
             t2 = np.array([[0],[0],[0]])
-            # tR, tT, _ , _ ,_ , _ , _ , _, _, _= cv2.fisheye.composeRT( rvec_l, tvec_l, cv2.fisheye.Rodrigues(RL)[0], t2)
-            # tR2, tT2, _, _, _, _, _, _, _, _ = cv2.fisheye.composeRT(rvec_r, tvec_r, cv2.fisheye.Rodrigues(RR)[0], t2)
-            tR2, tT2, _ , _ ,_ , _ , _ , _, _, _= cv2.fisheye.composeRT( rvec_l, tvec_l, cv2.fisheye.Rodrigues(np.eye(3))[0], t_T)
+            # tR, tT, _ , _ ,_ , _ , _ , _, _, _= cv2.fisheye.composeRT( rvec_l, tvec_l, cv2.Rodrigues(RL)[0], t2)
+            # tR2, tT2, _, _, _, _, _, _, _, _ = cv2.fisheye.composeRT(rvec_r, tvec_r, cv2.Rodrigues(RR)[0], t2)
+            tR2, tT2, _ , _ ,_ , _ , _ , _, _, _= cv2.fisheye.composeRT( rvec_l, tvec_l, cv2.Rodrigues(np.eye(3))[0], t_T)
 
             rp_l, _ = cv2.fisheye.projectPoints(tobjrefpoint[i], rvec_l, tvec_l, tmat, tmat_d)
             rp_r, _ = cv2.fisheye.projectPoints(tobjrefpoint[i], rvec_r, tvec_r, tmat2, tmat_d)
@@ -2611,14 +2587,14 @@ class StereoCalibration(object):
         plt.show()
 
     def depth_using_stereo(self, img_shape, camera_matrix_l, dist_coeffs_l, camera_matrix_r, dist_coeffs_r, R, T, filename_l, filename_r):
-        # img_l = cv2.fisheye.imread('./image/LEFT/LEFT13.jpg')
-        # img_r = cv2.fisheye.imread('./image/RIGHT/RIGHT13.jpg')
-        # img_l = cv2.fisheye.imread('./image33/LEFT/LEFT_Step_112.png')
-        # img_r = cv2.fisheye.imread('./image33/RIGHT/RIGHT_Step_112.png')
-        #img_l = cv2.fisheye.imread('./data/LGIT_data/LEFT/LEFT_Step_11.png')
-        #img_r = cv2.fisheye.imread('./data/LGIT_data/RIGHT/RIGHT_Step_11.png')
-        # img_l = cv2.fisheye.imread('./dump_pattern/LEFT/Cal0_00001.png')
-        # img_r = cv2.fisheye.imread('./dump_pattern/RIGHT/Cal1_00001.png')
+        # img_l = cv2.imread('./image/LEFT/LEFT13.jpg')
+        # img_r = cv2.imread('./image/RIGHT/RIGHT13.jpg')
+        # img_l = cv2.imread('./image33/LEFT/LEFT_Step_112.png')
+        # img_r = cv2.imread('./image33/RIGHT/RIGHT_Step_112.png')
+        #img_l = cv2.imread('./data/LGIT_data/LEFT/LEFT_Step_11.png')
+        #img_r = cv2.imread('./data/LGIT_data/RIGHT/RIGHT_Step_11.png')
+        # img_l = cv2.imread('./dump_pattern/LEFT/Cal0_00001.png')
+        # img_r = cv2.imread('./dump_pattern/RIGHT/Cal1_00001.png')
         # filename_l = 'D:/data/Calibration/Right_Zig/ALL/LEFT/CaptureImage_Left_005_01.raw'
         # filename_r = 'D:/data/Calibration/Right_Zig/ALL/RIGHT/CaptureImage_Right_005_01.raw'
         print(filename_l, '\n',filename_r)
@@ -2641,14 +2617,14 @@ class StereoCalibration(object):
             img_r = cv2.cvtColor(gray_r, cv2.COLOR_GRAY2BGR)
 
         else:
-            img_l = cv2.fisheye.imread(filename_l)
-            img_r = cv2.fisheye.imread(filename_r)
+            img_l = cv2.imread(filename_l)
+            img_r = cv2.imread(filename_r)
             gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
             gray_r = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)
-        # gray_l = cv2.fisheye.adaptiveThreshold(gray_l, 255, cv2.fisheye.ADAPTIVE_THRESH_MEAN_C, cv2.fisheye.THRESH_BINARY, 25, -5)
-        # gray_r = cv2.fisheye.adaptiveThreshold(gray_r, 255, cv2.fisheye.ADAPTIVE_THRESH_MEAN_C, cv2.fisheye.THRESH_BINARY, 25, -5)
-        # ret, gray_l = cv2.fisheye.threshold(gray_l, 40, 200, cv2.fisheye.THRESH_BINARY)
-        # ret, gray_r = cv2.fisheye.threshold(gray_r, 40, 200, cv2.fisheye.THRESH_BINARY)
+        # gray_l = cv2.adaptiveThreshold(gray_l, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
+        # gray_r = cv2.adaptiveThreshold(gray_r, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, -5)
+        # ret, gray_l = cv2.THRESHold(gray_l, 40, 200, cv2.THRESH_BINARY)
+        # ret, gray_r = cv2.THRESHold(gray_r, 40, 200, cv2.THRESH_BINARY)
 
         # STAGE 5: calculate stereo depth information
         # uses a modified H. Hirschmuller algorithm [HH08] that differs (see opencv manual)
@@ -2716,17 +2692,17 @@ class StereoCalibration(object):
 
         min_disp = 16
         num_disp = 112 - min_disp
-        # cv2.fisheye.imshow('left', img_l)
-        cv2.fisheye.imshow('disparity', (disparity - min_disp) / num_disp)
-        # cv2.fisheye.waitKey(0)
+        # cv2.imshow('left', img_l)
+        cv2.imshow('disparity', (disparity - min_disp) / num_disp)
+        # cv2.waitKey(0)
 
 
         # display image
-        cv2.fisheye.imshow("LEFT Camera Input", undistorted_rectifiedL);
-        cv2.fisheye.imshow("RIGHT Camera Input", undistorted_rectifiedR);
+        cv2.imshow("LEFT Camera Input", undistorted_rectifiedL);
+        cv2.imshow("RIGHT Camera Input", undistorted_rectifiedR);
 
         # display disparity
-        cv2.fisheye.imshow("SGBM Stereo Disparity - Output", disparity_scaled);
+        cv2.imshow("SGBM Stereo Disparity - Output", disparity_scaled);
         im_color = cv2.fisheye.applyColorMap(disparity_scaled, cv2.fisheye.COLORMAP_JET)
 #lip        #
         plt.imshow(im_color, 'gray')
@@ -2734,7 +2710,7 @@ class StereoCalibration(object):
         plt.imshow(disparity_scaled, 'gray')
 #lip        #
         plt.show()
-        # cv2.fisheye.waitKey(0)
+        # cv2.waitKey(0)
 
     def draw_xyz_axis(self, img, corners, imgpts):
         corner = tuple(corners[0].ravel())
@@ -2781,8 +2757,8 @@ class StereoCalibration(object):
                 img_l = cv2.cvtColor(gray_l, cv2.COLOR_GRAY2BGR)
                 img_r = cv2.cvtColor(gray_r, cv2.COLOR_GRAY2BGR)
             else:
-                img_l = cv2.fisheye.imread(images_left[i])
-                img_r = cv2.fisheye.imread(images_right[i])
+                img_l = cv2.imread(images_left[i])
+                img_r = cv2.imread(images_right[i])
 
                 gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
                 gray_r = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)
@@ -2790,12 +2766,12 @@ class StereoCalibration(object):
         for i, fname in enumerate(images_right):
             if (enable_debug_pose_estimation_display == 1 or enable_debug_pose_estimation_display == 2 ):
                 if(select_detect_pattern == 1):
-                    ret, corners_l = cv2.fisheye.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), None)
+                    ret, corners_l = cv2.findChessboardCorners(gray_l, (marker_point_x, marker_point_y), None)
                 else:
-                    ret, corners_l = cv2.fisheye.findCirclesGrid(gray_l, (marker_point_x, marker_point_y), flags=cv2.fisheye.CALIB_CB_SYMMETRIC_GRID)
+                    ret, corners_l = cv2.findCirclesGrid(gray_l, (marker_point_x, marker_point_y), flags=cv2.CALIB_CB_SYMMETRIC_GRID)
                 if ret == True:
                     if (select_detect_pattern == 1):
-                        corners2_l = cv2.fisheye.cornerSubPix(gray_l, corners_l, (11, 11), (-1, -1), self.criteria)
+                        corners2_l = cv2.cornerSubPix(gray_l, corners_l, (11, 11), (-1, -1), self.criteria)
                         ret, rvecs, tvecs = cv2.fisheye.solvePnP(self.objp, corners2_l, mtx, dist)
                         imgpts, jac = cv2.fisheye.projectPoints(self.axis, rvecs, tvecs, mtx, dist)
                         img = self.draw_xyz_axis(img_l, corners2_l, imgpts)
@@ -2804,17 +2780,17 @@ class StereoCalibration(object):
                         imgpts, jac = cv2.fisheye.projectPoints(self.axis, rvecs, tvecs, mtx, dist)
                         img = self.draw_xyz_axis(img_l, corners_l, imgpts)
 
-                    cv2.fisheye.imshow('poseEstimate_Left _ '+str(i+1)+'st image  '+images_left[i], img)
-                    k =  cv2.fisheye.waitKey(500)
+                    cv2.imshow('poseEstimate_Left _ '+str(i+1)+'st image  '+images_left[i], img)
+                    k =  cv2.waitKey(500)
 
             if (enable_debug_pose_estimation_display == 1 or enable_debug_pose_estimation_display == 3 ):
                 if (select_detect_pattern == 1):
-                    ret, corners_r = cv2.fisheye.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), None)
+                    ret, corners_r = cv2.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), None)
                 else:
-                    ret, corners_r = cv2.fisheye.findCirclesGrid(gray_l, (marker_point_x, marker_point_y), flags=cv2.fisheye.CALIB_CB_SYMMETRIC_GRID)
+                    ret, corners_r = cv2.findCirclesGrid(gray_l, (marker_point_x, marker_point_y), flags=cv2.CALIB_CB_SYMMETRIC_GRID)
                 if ret == True:
                     if (select_detect_pattern == 1):
-                        corners2_r = cv2.fisheye.cornerSubPix(gray_r, corners_r, (11, 11), (-1, -1), self.criteria)
+                        corners2_r = cv2.cornerSubPix(gray_r, corners_r, (11, 11), (-1, -1), self.criteria)
                         ret, rvecs, tvecs = cv2.fisheye.solvePnP(self.objp, corners2_r, mtx, dist)
                         imgpts, jac = cv2.fisheye.projectPoints(self.axis, rvecs, tvecs, mtx, dist)
                         img = self.draw_xyz_axis(img_r, corners2_r, imgpts)
@@ -2823,8 +2799,8 @@ class StereoCalibration(object):
                         imgpts, jac = cv2.fisheye.projectPoints(self.axis, rvecs, tvecs, mtx, dist)
                         img = self.draw_xyz_axis(img_l, corners_r, imgpts)
 
-                    cv2.fisheye.imshow('poseEstimate_Right _ '+str(i+1)+'st image  '+images_right[i], img)
-                    k = cv2.fisheye.waitKey(0)
+                    cv2.imshow('poseEstimate_Right _ '+str(i+1)+'st image  '+images_right[i], img)
+                    k = cv2.waitKey(0)
 
     def reprojection_error(self, obj_points, img_points, rvecs, tvecs, camera_matrix, dist_coeffs):
         min_error = 1
@@ -2894,7 +2870,7 @@ class StereoCalibration(object):
             temp_tvecs[1] = temp_tvecs[1]
             temp_tvecs[2] = temp_tvecs[2]
 
-            # tR = cv2.fisheye.Rodrigues(temp_rvecs)[0]
+            # tR = cv2.Rodrigues(temp_rvecs)[0]
             # euler = rotationMatrixToEulerAngles(tR) * radianToDegree
             # print('R1 [%.8f, %.8f, %.8f]' % (euler[0], euler[1], euler[2]), sep='\n')
             # print('T1 [%.8f, %.8f, %.8f]' % (temp_tvecs[0]*1000, temp_tvecs[1]*1000, temp_tvecs[2]*1000), sep='\n')
@@ -2955,7 +2931,7 @@ class StereoCalibration(object):
             total_points += len(obj_points[i])
 
             # calculate world <-> cam2 transformation
-            rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.fisheye.Rodrigues(R)[0], T)[:2]
+            rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
             #print('rvec_r', 'tvec_r', rvec_r, tvec_r)
 
             # compute reprojection error for cam2
@@ -2979,7 +2955,7 @@ class StereoCalibration(object):
         #     total_points += len(obj_points[i])
         #
         #     # calculate world <-> cam2 transformation
-        #     rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.fisheye.Rodrigues(R)[0], T)[:2]
+        #     rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
         #
         #     # compute reprojection error for cam2
         #     rp_r, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
@@ -3034,7 +3010,7 @@ class StereoCalibration(object):
             total_points += len(obj_points[i])
 
             # calculate world <-> cam2 transformation
-            rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.fisheye.Rodrigues(R)[0], T)[:2]
+            rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
             #print('rvec_r tvec_r\n', rvec_r,'\n', tvec_r,'\n')
 
             # compute reprojection error for cam2
@@ -3097,7 +3073,7 @@ class StereoCalibration(object):
             total_points += len(obj_points[i])
 
             # calculate world <-> cam2 transformation
-            rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.fisheye.Rodrigues(R)[0], T)[:2]
+            rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
             #print('rvec_r', 'tvec_r', rvec_r, tvec_r)
 
             # compute reprojection error for cam2
@@ -3159,11 +3135,11 @@ class StereoCalibration(object):
 
             #it is for calculating extrinsic without init-extrinsic
             # t_mat = np.eye(4)
-            # t_mat[0:3, 0:3] = cv2.fisheye.Rodrigues(rvec_l)[0]
+            # t_mat[0:3, 0:3] = cv2.Rodrigues(rvec_l)[0]
             # t_mat[0:3, 3] = tvec_l.T
             # # print('t_matrix',t_matrix)
             # t_mat_inv = np.linalg.inv(t_mat)
-            # uR33_inv = cv2.fisheye.Rodrigues(t_mat_inv[0:3, 0:3])[0]
+            # uR33_inv = cv2.Rodrigues(t_mat_inv[0:3, 0:3])[0]
             # uT_inv = t_mat_inv[0:3, 3]
 
             # rvec_ext, tvec__ext = cv2.fisheye.composeRT(uR33_inv, uT_inv, rvec_r, tvec_r)[:2]
@@ -3275,11 +3251,11 @@ class StereoCalibration(object):
 
             #it is for calculating extrinsic without init-extrinsic
             t_mat = np.eye(4)
-            t_mat[0:3, 0:3] = cv2.fisheye.Rodrigues(rvec_l)[0]
+            t_mat[0:3, 0:3] = cv2.Rodrigues(rvec_l)[0]
             t_mat[0:3, 3] = tvec_l.T
             # print('t_matrix',t_matrix)
             t_mat_inv = np.linalg.inv(t_mat)
-            uR33_inv = cv2.fisheye.Rodrigues(t_mat_inv[0:3, 0:3])[0]
+            uR33_inv = cv2.Rodrigues(t_mat_inv[0:3, 0:3])[0]
             uT_inv = t_mat_inv[0:3, 3]
 
             rvec_ext, tvec__ext = cv2.fisheye.composeRT(uR33_inv, uT_inv, rvec_r, tvec_r)[:2]
@@ -3297,7 +3273,7 @@ class StereoCalibration(object):
             total_points += len(obj_points[i])
 
             # calculate world <-> cam2 transformation
-            rvec_r2, tvec_r2 = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.fisheye.Rodrigues(R)[0], T)[:2]
+            rvec_r2, tvec_r2 = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
             #print('rvec_r', 'tvec_r', rvec_r, tvec_r)
 
             # compute reprojection error for cam2
@@ -3531,7 +3507,7 @@ class StereoCalibration(object):
             total_points += len(obj_points[i])
 
             # calculate world <-> cam2 transformation
-            rvec_r2, tvec_r2 = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.fisheye.Rodrigues(R)[0], T)[:2]
+            rvec_r2, tvec_r2 = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
             #print('rvec_r', 'tvec_r', rvec_r, tvec_r)
 
             # compute reprojection error for cam2
@@ -3637,7 +3613,7 @@ class StereoCalibration(object):
                 rvec_l = res['x'][0:3]
                 tvec_l = res['x'][3:6]
                 rp_l, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_l, tvec_l, A1, D1)
-                rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.fisheye.Rodrigues(R)[0], T)[:2]
+                rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
                 rp_r, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
                 temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(np.square(np.float64(rp_r - t_imgpoints_r)))
                 temp_points = 2 * len(obj_points[i])
@@ -3664,7 +3640,7 @@ class StereoCalibration(object):
                 rvec_l = res['x'][0:3]
                 tvec_l = res['x'][3:6]
                 rp_l, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_l, tvec_l, A1, D1)
-                rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.fisheye.Rodrigues(R)[0], T)[:2]
+                rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
                 rp_r, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
                 temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(
                     np.square(np.float64(rp_r - t_imgpoints_r)))
@@ -3693,7 +3669,7 @@ class StereoCalibration(object):
                 rvec_l = res['x'][0:3]
                 tvec_l = res['x'][3:6]
                 rp_l, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_l, tvec_l, A1, D1)
-                rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.fisheye.Rodrigues(R)[0], T)[:2]
+                rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
                 rp_r, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
                 temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(
                     np.square(np.float64(rp_r - t_imgpoints_r)))
@@ -3736,11 +3712,11 @@ class StereoCalibration(object):
 
             #it is for calculating extrinsic without init-extrinsic
             t_mat = np.eye(4)
-            t_mat[0:3, 0:3] = cv2.fisheye.Rodrigues(rvec_l)[0]
+            t_mat[0:3, 0:3] = cv2.Rodrigues(rvec_l)[0]
             t_mat[0:3, 3] = tvec_l.T
             # print('t_matrix',t_matrix)
             t_mat_inv = np.linalg.inv(t_mat)
-            uR33_inv = cv2.fisheye.Rodrigues(t_mat_inv[0:3, 0:3])[0]
+            uR33_inv = cv2.Rodrigues(t_mat_inv[0:3, 0:3])[0]
             uT_inv = t_mat_inv[0:3, 3]
 
             rvec_ext, tvec__ext = cv2.fisheye.composeRT(uR33_inv, uT_inv, rvec_r, tvec_r)[:2]
@@ -3760,7 +3736,7 @@ class StereoCalibration(object):
             total_points += len(obj_points[i])
 
             # calculate world <-> cam2 transformation
-            rvec_r2, tvec_r2 = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.fisheye.Rodrigues(R)[0], T)[:2]
+            rvec_r2, tvec_r2 = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
             #print('rvec_r', 'tvec_r', rvec_r, tvec_r)
 
             # compute reprojection error for cam2
@@ -3914,8 +3890,8 @@ class StereoCalibration(object):
             img1 = cv2.fisheye.line(img1, (x0, y0), (x1, y1), color, 1)
             img1 = cv2.fisheye.circle(img1, tuple(*pt1), 5, color, -1)
             img2 = cv2.fisheye.circle(img2, tuple(*pt2), 5, color, -1)
-            # cv2.fisheye.imshow("left",img1)
-            # cv2.fisheye.waitKey(0)
+            # cv2.imshow("left",img1)
+            # cv2.waitKey(0)
         return img1, img2
 
     def display_reprojection_point_and_image_point(self, cal_path, imgpoint_left, imgpoint_right, reproject_left, reproject_right):
@@ -3954,8 +3930,8 @@ class StereoCalibration(object):
             img_l = cv2.cvtColor(gray_l, cv2.COLOR_GRAY2BGR)
             img_r = cv2.cvtColor(gray_r, cv2.COLOR_GRAY2BGR)
         else:
-            img_l = cv2.fisheye.imread(images_left[0])
-            img_r = cv2.fisheye.imread(images_right[0])
+            img_l = cv2.imread(images_left[0])
+            img_r = cv2.imread(images_right[0])
             gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
             gray_r = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)
 
@@ -3977,8 +3953,8 @@ class StereoCalibration(object):
             #     img_l = cv2.cvtColor(gray_l, cv2.COLOR_GRAY2BGR)
             #     img_r = cv2.cvtColor(gray_r, cv2.COLOR_GRAY2BGR)
             # else:
-            #     img_l = cv2.fisheye.imread(images_left[i])
-            #     img_r = cv2.fisheye.imread(images_right[i])
+            #     img_l = cv2.imread(images_left[i])
+            #     img_r = cv2.imread(images_right[i])
             #
             #     gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
             #     gray_r = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)
@@ -4003,11 +3979,11 @@ class StereoCalibration(object):
                     self.draw_arrow(img_r, timgpoint_right[j][0], timgpoint_right[j][1], treproject_right[j][0], treproject_right[j][1], (0, 0, 255), 2)
 
             # Draw and display the corners
-            cv2.fisheye.imshow("RMS_LeftImage  _ "+str(i+1)+ 'st image '+ images_left[i], img_l)
-            cv2.fisheye.imshow("RMS_RightImage _ "+str(i+1)+ 'st image '+ images_right[i], img_r)
+            cv2.imshow("RMS_LeftImage  _ "+str(i+1)+ 'st image '+ images_left[i], img_l)
+            cv2.imshow("RMS_RightImage _ "+str(i+1)+ 'st image '+ images_right[i], img_r)
             cv2.fisheye.imwrite(cal_path + '/ReL%03d'%(i+1) +'.png', img_l)
             cv2.fisheye.imwrite(cal_path + '/ReR%03d'%(i+1) +'.png', img_r)
-            # cv2.fisheye.waitKey(0)
+            # cv2.waitKey(0)
 
         pass
 
