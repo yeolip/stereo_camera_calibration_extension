@@ -872,6 +872,9 @@ def eulerAnglesToRotationMatrix(theta):
 
 
 class StereoCalibration(object):
+    def getName(self):
+        return "extend"
+        
     def __init__(self, argv):
         # termination criteria
         self.criteria = (cv2.TERM_CRITERIA_EPS +

@@ -46,24 +46,58 @@ C_USE_EXTRINSIC_GUESS = 4194304
 C_RATIONAL_MODEL = 16384
 C_THIN_PRISM_MODEL = 32768
 
-def user_calib_option(ttype):
+#fisheye flag
+C_FISHEYE_CHECK_COND = 4
+C_FISHEYE_FIX_INTRINSIC = 256
+C_FISHEYE_FIX_K1 = 16
+C_FISHEYE_FIX_K2 = 32
+C_FISHEYE_FIX_K3 = 64
+C_FISHEYE_FIX_K4 = 128
+C_FISHEYE_FIX_PRINCIPAL_POINT = 512
+C_FISHEYE_FIX_SKEW = 8
+C_FISHEYE_RECOMPUTE_EXTRINSIC = 2
+C_FISHEYE_USE_INTRINSIC_GUESS = 1
+
+
+CALIB_CHECK_COND = 4
+CALIB_FIX_INTRINSIC = 256
+CALIB_FIX_K1 = 16
+CALIB_FIX_K2 = 32
+CALIB_FIX_K3 = 64
+CALIB_FIX_K4 = 128
+CALIB_FIX_PRINCIPAL_POINT = 512
+CALIB_FIX_SKEW = 8
+CALIB_RECOMPUTE_EXTRINSIC = 2
+CALIB_USE_INTRINSIC_GUESS = 1
+
+def user_calib_option(ttype, targetName):
     tflag = 0
-    if(ttype == 'BAGIC'):
-        tflag = C_USE_INTRINSIC_GUESS|C_FIX_ASPECT_RATIO|C_ZERO_TANGENT_DIST|C_FIX_K3|C_FIX_K4|C_FIX_K5
-    elif(ttype == 'GUESS'):
-        tflag = C_USE_INTRINSIC_GUESS
-    elif (ttype == 'GUESS_K6'):
-        tflag = C_USE_INTRINSIC_GUESS|C_RATIONAL_MODEL
-    elif (ttype == 'FIX'):
-        tflag = C_FIX_INTRINSIC
-    elif (ttype == 'USER1'):
-        tflag = C_USE_INTRINSIC_GUESS|C_ZERO_TANGENT_DIST
-    elif (ttype == 'USER2'):
-        tflag = C_USE_INTRINSIC_GUESS|C_SAME_FOCAL_LENGTH|C_FIX_FOCAL_LENGTH|C_FIX_ASPECT_RATIO|C_ZERO_TANGENT_DIST|C_FIX_K3|C_FIX_K4|C_FIX_K5
-    elif (ttype == 'USER3'):
-        tflag = C_USE_INTRINSIC_GUESS|C_FIX_ASPECT_RATIO|C_FIX_K3|C_FIX_K4|C_FIX_K5
-    elif (ttype == 'USER4'):
-        tflag = C_USE_INTRINSIC_GUESS|C_RATIONAL_MODEL|C_ZERO_TANGENT_DIST|C_FIX_K5|C_FIX_K6
+    if(targetName == 'fisheye'):
+        if(ttype == 'BAGIC'):
+            tflag = CALIB_USE_INTRINSIC_GUESS|CALIB_CHECK_COND|CALIB_RECOMPUTE_EXTRINSIC|CALIB_FIX_SKEW
+        elif(ttype == 'GUESS'): #current is not support skew. (we don't have skew interface)if you need, let me know.
+            tflag = CALIB_USE_INTRINSIC_GUESS|CALIB_CHECK_COND|CALIB_RECOMPUTE_EXTRINSIC|CALIB_FIX_SKEW
+        elif (ttype == 'FIX'):
+            tflag = CALIB_FIX_INTRINSIC
+        elif (ttype == 'USER1'):
+            tflag = CALIB_USE_INTRINSIC_GUESS|CALIB_CHECK_COND|CALIB_RECOMPUTE_EXTRINSIC
+    else:
+        if(ttype == 'BAGIC'):
+            tflag = C_USE_INTRINSIC_GUESS|C_FIX_ASPECT_RATIO|C_ZERO_TANGENT_DIST|C_FIX_K3|C_FIX_K4|C_FIX_K5
+        elif(ttype == 'GUESS'):
+            tflag = C_USE_INTRINSIC_GUESS
+        elif (ttype == 'GUESS_K6'):
+            tflag = C_USE_INTRINSIC_GUESS|C_RATIONAL_MODEL
+        elif (ttype == 'FIX'):
+            tflag = C_FIX_INTRINSIC
+        elif (ttype == 'USER1'):
+            tflag = C_USE_INTRINSIC_GUESS|C_ZERO_TANGENT_DIST
+        elif (ttype == 'USER2'):
+            tflag = C_USE_INTRINSIC_GUESS|C_SAME_FOCAL_LENGTH|C_FIX_FOCAL_LENGTH|C_FIX_ASPECT_RATIO|C_ZERO_TANGENT_DIST|C_FIX_K3|C_FIX_K4|C_FIX_K5
+        elif (ttype == 'USER3'):
+            tflag = C_USE_INTRINSIC_GUESS|C_FIX_ASPECT_RATIO|C_FIX_K3|C_FIX_K4|C_FIX_K5
+        elif (ttype == 'USER4'):
+            tflag = C_USE_INTRINSIC_GUESS|C_RATIONAL_MODEL|C_ZERO_TANGENT_DIST|C_FIX_K5|C_FIX_K6
 
     return tflag
 
@@ -113,11 +147,12 @@ class SearchManager(object):
             if (args.path_img != None):
                 print("\nIMAGE ", args.path_img)
                 objCal.initialize(args.path_img)
-                objCal.read_images_with_mono_stereo(args.path_img, opt1=user_calib_option('GUESS'), opt2=user_calib_option('GUESS'))
+                print(objCal.getName())
+                objCal.read_images_with_mono_stereo(args.path_img, opt1=user_calib_option('USER1',objCal.getName()), opt2=user_calib_option('USER1',objCal.getName()))
             elif (args.path_point != None):
                 print("\nPOINT ", args.path_point)
                 objCal.initialize(args.path_point)
-                objCal.read_points_with_mono_stereo(args.path_point, None, None, opt1=user_calib_option('BAGIC'), opt2=user_calib_option('BAGIC'))
+                objCal.read_points_with_mono_stereo(args.path_point, None, None, opt1=user_calib_option('BAGIC',objCal.getName()), opt2=user_calib_option('BAGIC',objCal.getName()))
                 # objCal.read_points_with_mono_stereo(args.path_point, None , None)
                 # objCal.read_points_with_stereo(args.path_point, None, None)
 
@@ -133,7 +168,7 @@ class SearchManager(object):
                     objCal.initialize(args.path_point)
                     # objCal.read_points_with_mono_stereo(args.path_point, args.path_json, None)
                     # objCal.read_points_with_stereo(args.path_point, args.path_json, None)
-                    objCal.read_points_with_stereo(args.path_point, args.path_json, None, opt2=user_calib_option('FIX'))
+                    objCal.read_points_with_stereo(args.path_point, args.path_json, None, opt2=user_calib_option('FIX',objCal.getName()))
                     #please check intrinsic flag (GUESS or FIX)
 
         elif(args.action == 3):
@@ -179,7 +214,7 @@ class SearchManager(object):
                         objCal.initialize(tpath)
                         # print(user_calib_option('GUESS'))
                         objCal.read_points_with_mono_stereo(tpath, None, None)
-                        # objCal.read_points_with_mono_stereo(tpath, None, None, opt1=user_calib_option('GUESS'), opt2=user_calib_option('GUESS'))
+                        # objCal.read_points_with_mono_stereo(tpath, None, None, opt1=user_calib_option('GUESS',objCal.getName()), opt2=user_calib_option('GUESS',objCal.getName()))
 
 
             elif(args.action == 2):
@@ -191,7 +226,7 @@ class SearchManager(object):
                             print("\nIMAGE ", tpath)
                             objCal.initialize(tpath)
                             objCal.read_param_and_images_with_stereo(tpath, args.path_json)
-                            # objCal.read_param_and_images_with_stereo(tpath, args.path_json, opt2=user_calib_option('FIX'))
+                            # objCal.read_param_and_images_with_stereo(tpath, args.path_json, opt2=user_calib_option('FIX',objCal.getName()))
                     if (args.path_point != None and len(tlist_of_points) >= 1):
                         for tnum, tpath in enumerate(tlist_of_points):
                             print('\n###### ', tnum + 1, 'st#################')
@@ -207,14 +242,14 @@ class SearchManager(object):
                         print("\nIMAGE ", tlist_data[0], '\n,JSON ',  tlist_data[1])
                         objCal.initialize(tlist_data[0])
                         # objCal.read_param_and_images_with_stereo(tlist_data[0], tlist_data[1])
-                        objCal.read_param_and_images_with_stereo(tlist_data[0], tlist_data[1], opt2=user_calib_option('BAGIC'))
+                        objCal.read_param_and_images_with_stereo(tlist_data[0], tlist_data[1], opt2=user_calib_option('BAGIC',objCal.getName()))
                     for tnum, tlist_data in enumerate(tlist_points_with_json):
                         print('\n###### ', tnum+1, 'st#################')
                         print("\nPOINT ", tlist_data[0], '\n,JSON ',  tlist_data[1])
                         objCal.initialize(tlist_data[0])
                         # objCal.read_points_with_mono_stereo(tlist_data[0], tlist_data[1], None)
                         # objCal.read_points_with_stereo(tlist_data[0], tlist_data[1], None)
-                        objCal.read_points_with_stereo(tlist_data[0], tlist_data[1], None, opt2=user_calib_option('BAGIC'))
+                        objCal.read_points_with_stereo(tlist_data[0], tlist_data[1], None, opt2=user_calib_option('BAGIC',objCal.getName()))
 
             elif(args.action == 3):
                 print("3) calculation Reprojection error (action is %d)\n"%(args.action))

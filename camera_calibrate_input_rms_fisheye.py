@@ -852,6 +852,9 @@ def eulerAnglesToRotationMatrix(theta):
 
 
 class StereoCalibration(object):
+    def getName(self):
+        return "fisheye"
+
     def __init__(self, argv):
         # termination criteria
         self.criteria = (cv2.TERM_CRITERIA_EPS +
@@ -1951,17 +1954,17 @@ class StereoCalibration(object):
             #flags |= cv2.fisheye.CALIB_FIX_K3
             #flags |= cv2.fisheye.CALIB_FIX_K4
 
-        flags = 0
-        # flags |= cv2.fisheye.CALIB_FIX_INTRINSIC
-        # flags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
-        flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
-        flags |= cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC
-        flags |= cv2.fisheye.CALIB_CHECK_COND
-        flags |= cv2.fisheye.CALIB_FIX_SKEW
-        #flags |= cv2.fisheye.CALIB_FIX_K1
-        #flags |= cv2.fisheye.CALIB_FIX_K2
-        #flags |= cv2.fisheye.CALIB_FIX_K3
-        #flags |= cv2.fisheye.CALIB_FIX_K4
+        # flags = 0
+        # # flags |= cv2.fisheye.CALIB_FIX_INTRINSIC
+        # # flags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
+        # flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
+        # flags |= cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC
+        # flags |= cv2.fisheye.CALIB_CHECK_COND
+        # flags |= cv2.fisheye.CALIB_FIX_SKEW
+        # #flags |= cv2.fisheye.CALIB_FIX_K1
+        # #flags |= cv2.fisheye.CALIB_FIX_K2
+        # #flags |= cv2.fisheye.CALIB_FIX_K3
+        # #flags |= cv2.fisheye.CALIB_FIX_K4
 
         # default param (if you need to change default param, please change this value)
         camera_matrix_l = np.zeros((3, 3), np.float64)
@@ -2060,17 +2063,17 @@ class StereoCalibration(object):
             #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K3
             #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K4
 
-        self.stereo_flags = 0
-        # self.stereo_flags |= cv2.fisheye.CALIB_FIX_INTRINSIC
-        # self.stereo_flags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
-        self.stereo_flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
-        self.stereo_flags |= cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC
-        self.stereo_flags |= cv2.fisheye.CALIB_CHECK_COND
-        self.stereo_flags |= cv2.fisheye.CALIB_FIX_SKEW
-        #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K1
-        #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K2
-        #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K3
-        #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K4
+        # self.stereo_flags = 0
+        # # self.stereo_flags |= cv2.fisheye.CALIB_FIX_INTRINSIC
+        # # self.stereo_flags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
+        # self.stereo_flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
+        # self.stereo_flags |= cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC
+        # self.stereo_flags |= cv2.fisheye.CALIB_CHECK_COND
+        # self.stereo_flags |= cv2.fisheye.CALIB_FIX_SKEW
+        # #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K1
+        # #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K2
+        # #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K3
+        # #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K4
 
         self.camera_model = self.stereo_camera_calibrate(img_shape)
         # print(self.camera_model)
@@ -2981,10 +2984,16 @@ class StereoCalibration(object):
         # print(type(obj_points[0]),type(imgpoints_l[0]),type(imgpoints_r[0]))
         # print((obj_points[0]), (imgpoints_l[0]), (imgpoints_r[0]))
         # print((obj_points[0].shape), (imgpoints_l[0].shape), (imgpoints_r[0].shape))
+        objpoints2 = np.expand_dims(np.asarray(obj_points), -2)
 
         for i in range(len(obj_points)):
             t_imgpoints_l = imgpoints_l[i].reshape(-1, 1, 2)
             t_imgpoints_r = imgpoints_r[i].reshape(-1, 1, 2)
+
+            undistorted_l = cv2.fisheye.undistortPoints(t_imgpoints_l, A1, D1)
+            #undistorted_r = cv.fisheye.undistortPoints(t_imgpoints_r, A2, D2)
+            Keye = np.eye(3)
+            Dzero = np.zeros((1, 5))
 
             #print('test', t_obj_points, t_imgpoints_l, t_imgpoints_r)
             # calculate world <-> cam1 transformation
@@ -2995,34 +3004,35 @@ class StereoCalibration(object):
             #_, t_rvec_l, t_tvec_l = cv2.fisheye.solvePnP(obj_points[i], imgpoints_l[i], A1, D1, useExtrinsicGuess = True, flags=cv2.fisheye.SOLVEPNP_ITERATIVE )
             # A1[0][0] = -A1[0][0]
             # A1[1][1] = -A1[1][1]
+            # _, rvec_l, tvec_l = cv2.solvePnP(obj_points[i], t_imgpoints_l, A1, D1, flags=cv2.SOLVEPNP_ITERATIVE     )
+            _, rvec_l, tvec_l = cv2.solvePnP(obj_points[i], undistorted_l, Keye, Dzero, flags=cv2.SOLVEPNP_ITERATIVE     )
 
-            _, rvec_l, tvec_l = cv2.fisheye.solvePnP(obj_points[i], t_imgpoints_l, A1, D1, flags=cv2.fisheye.SOLVEPNP_ITERATIVE     )
             # print(A1)
             #print('rvec_l tvec_l\n',rvec_l,'\n', tvec_l,'\n')
 
             # _, temp_rvecs, temp_tvecs = cv2.fisheye.solvePnP(obj_points[i], imgpoints_l[i], A1, D1, flags=cv2.fisheye.SOLVEPNP_ITERATIVE  )
             #print('temp_rvecs', 'temp_tvecs', temp_rvecs, temp_tvecs)
             # compute reprojection error for cam1
-            rp_l, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_l, tvec_l, A1, D1)
+            rp_l, _ = cv2.fisheye.projectPoints(objpoints2[i], rvec_l, tvec_l, A1, D1)
             #print( 'rp_l' , rp_l )
             #tot_error += np.sum(np.square(np.float64(imgpoints_l[i] - rp_l)))
             tot_error += np.sum(np.square(np.float64(rp_l - t_imgpoints_l)))
             total_points += len(obj_points[i])
 
             # calculate world <-> cam2 transformation
-            rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
+            rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
             #print('rvec_r tvec_r\n', rvec_r,'\n', tvec_r,'\n')
 
             # compute reprojection error for cam2
-            rp_r, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
+            rp_r, _ = cv2.fisheye.projectPoints(objpoints2[i], rvec_r, tvec_r, A2, D2)
             #print( 'rp_r' , rp_r )
             # tot_error += np.square(imgpoints_r[i] - rp_r).sum()
             tot_error += np.square(rp_r - t_imgpoints_r).sum()
-            total_points += len(obj_points[i])
+            total_points += len(objpoints2[i])
 
             #temp_error = np.square(rp_r - t_imgpoints_r).sum() + np.square(rp_l - t_imgpoints_l).sum()
             temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(np.square(np.float64(rp_r - t_imgpoints_r)))
-            temp_points = 2 * len(obj_points[i])
+            temp_points = 2 * len(objpoints2[i])
             temp_mean_error = np.sqrt(temp_error / temp_points)
             print(str(i+1) + 'st %.8f'%temp_mean_error)
             flog.write(str(i+1) + 'st %.8f\n'%temp_mean_error)
