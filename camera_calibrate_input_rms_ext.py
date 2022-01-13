@@ -106,7 +106,7 @@ import datetime as dt
 import scipy.optimize
 
 ####select user option for debugging ###########################################
-enable_debug_detect_pattern_from_image = 0                 #true: 1, false: 0
+enable_debug_detect_pattern_from_image = 1                 #true: 1, false: 0
 enable_debug_display_image_point_and_reproject_point = 0   #true: 1, false: 0
 enable_debug_pose_estimation_display = 0                   #false: 0, all_enable: 1, left:2, right:3
 enable_debug_loop_moving_of_rot_and_trans = 1              #false: 0, left: 1, right:2
@@ -135,12 +135,12 @@ default_camera_param_cx = image_width/2
 default_camera_param_cy = image_height/2
 default_camera_param_k1 = -0.1
 default_camera_param_k2 = -0.2
+default_camera_param_p1 = 0
+default_camera_param_p2 = 0
 default_camera_param_k3 = 0
 default_camera_param_k4 = 0
 default_camera_param_k5 = 0
 default_camera_param_k6 = 0
-default_camera_param_k7 = 0
-default_camera_param_k8 = 0
 ###########################################################
 
 def check_version_of_opencv():
@@ -188,22 +188,22 @@ def load_value_from_json(filename):
     m_cx, m_cy = fjs["master"]["lens_params"]['principal_point']
     m_k1 = fjs["master"]["lens_params"]['k1']
     m_k2 = fjs["master"]["lens_params"]['k2']
-    m_k3 = fjs["master"]["lens_params"]['k3']
-    m_k4 = fjs["master"]["lens_params"]['k4']
-    m_k5 = fjs["master"]["lens_params"]['k5']
-    m_k6 = fjs["master"]["lens_params"]['k6']
-    m_k7 = fjs["master"]["lens_params"]['k7']
-    m_k8 = fjs["master"]["lens_params"]['k8']
+    m_k3 = fjs["master"]["lens_params"]['p1']
+    m_k4 = fjs["master"]["lens_params"]['p2']
+    m_k5 = fjs["master"]["lens_params"]['k3']
+    m_k6 = fjs["master"]["lens_params"]['k4']
+    m_k7 = fjs["master"]["lens_params"]['k5']
+    m_k8 = fjs["master"]["lens_params"]['k6']
     s_fx, s_fy = fjs["slave"]["lens_params"]['focal_len']
     s_cx, s_cy = fjs["slave"]["lens_params"]['principal_point']
     s_k1 = fjs["slave"]["lens_params"]['k1']
     s_k2 = fjs["slave"]["lens_params"]['k2']
-    s_k3 = fjs["slave"]["lens_params"]['k3']
-    s_k4 = fjs["slave"]["lens_params"]['k4']
-    s_k5 = fjs["slave"]["lens_params"]['k5']
-    s_k6 = fjs["slave"]["lens_params"]['k6']
-    s_k7 = fjs["slave"]["lens_params"]['k7']
-    s_k8 = fjs["slave"]["lens_params"]['k8']
+    s_k3 = fjs["slave"]["lens_params"]['p1']
+    s_k4 = fjs["slave"]["lens_params"]['p2']
+    s_k5 = fjs["slave"]["lens_params"]['k3']
+    s_k6 = fjs["slave"]["lens_params"]['k4']
+    s_k7 = fjs["slave"]["lens_params"]['k5']
+    s_k8 = fjs["slave"]["lens_params"]['k6']
     print("*" * 50)
 
     m_ttrans = np.zeros((3, 1))
@@ -302,7 +302,7 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
     # fpd = pd.read_json(filename)
     # print("modify_value_from_json")
     # fp = open(filename + '_sample.json')
-    init_json = {'type': 'Calibration Parameter for Stereo Camera', 'version': 1.2, 'master': {'serial': 0, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'k5': 0, 'k6': 0,'k7': 0,'k8': 0,'calib_res': [0, 0]}}, 'slave': {'serial': 1, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'k5': 0, 'k6': 0,'k7': 0,'k8': 0,'calib_res': [0, 0]}}}
+    init_json = {'type': 'Calibration Parameter for Stereo Camera', 'version': 1.2, 'master': {'serial': 0, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'p1': 0, 'p2': 0, 'k3': 0, 'k4': 0,'k5': 0,'k6': 0,'calib_res': [0, 0]}}, 'slave': {'serial': 1, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'p1': 0, 'p2': 0, 'k3': 0, 'k4': 0,'k5': 0,'k6': 0,'calib_res': [0, 0]}}}
 
     fjson = json.dumps(init_json)
     # print(filename + '_sample.json')
@@ -393,22 +393,22 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
     fjs["master"]["lens_params"]['principal_point'] = tM1[0][2], tM1[1][2]
     fjs["master"]["lens_params"]['k1'] = td1[0][0]
     fjs["master"]["lens_params"]['k2'] = td1[0][1]
-    fjs["master"]["lens_params"]['k3'] = td1[0][2]
-    fjs["master"]["lens_params"]['k4'] = td1[0][3]
-    fjs["master"]["lens_params"]['k5'] = td1[0][4]
-    fjs["master"]["lens_params"]['k6'] = td1[0][5]
-    fjs["master"]["lens_params"]['k7'] = td1[0][6]
-    fjs["master"]["lens_params"]['k8'] = td1[0][7]
+    fjs["master"]["lens_params"]['p1'] = td1[0][2]
+    fjs["master"]["lens_params"]['p2'] = td1[0][3]
+    fjs["master"]["lens_params"]['k3'] = td1[0][4]
+    fjs["master"]["lens_params"]['k4'] = td1[0][5]
+    fjs["master"]["lens_params"]['k5'] = td1[0][6]
+    fjs["master"]["lens_params"]['k6'] = td1[0][7]
     fjs["slave"]["lens_params"]['focal_len'] = tM2[0][0], tM2[1][1]
     fjs["slave"]["lens_params"]['principal_point'] = tM2[0][2], tM2[1][2]
     fjs["slave"]["lens_params"]['k1'] = td2[0][0]
     fjs["slave"]["lens_params"]['k2'] = td2[0][1]
-    fjs["slave"]["lens_params"]['k3'] = td2[0][2]
-    fjs["slave"]["lens_params"]['k4'] = td2[0][3]
-    fjs["slave"]["lens_params"]['k5'] = td2[0][4]
-    fjs["slave"]["lens_params"]['k6'] = td2[0][5]
-    fjs["slave"]["lens_params"]['k7'] = td2[0][6]
-    fjs["slave"]["lens_params"]['k8'] = td2[0][7]
+    fjs["slave"]["lens_params"]['p1'] = td2[0][2]
+    fjs["slave"]["lens_params"]['p2'] = td2[0][3]
+    fjs["slave"]["lens_params"]['k3'] = td2[0][4]
+    fjs["slave"]["lens_params"]['k4'] = td2[0][5]
+    fjs["slave"]["lens_params"]['k5'] = td2[0][6]
+    fjs["slave"]["lens_params"]['k6'] = td2[0][7]
     print("*" * 50)
 
     fjs["master"]["lens_params"]['calib_res'] = imgsize
@@ -464,23 +464,23 @@ def modify_value_from_json_from_plus_to_minus_focal(path, filename, M1, d1, M2, 
     fjs["master"]["lens_params"]['principal_point'] = M1[0][2], M1[1][2]
     fjs["master"]["lens_params"]['k1'] = d1[0][0]
     fjs["master"]["lens_params"]['k2'] = d1[0][1]
-    fjs["master"]["lens_params"]['k3'] = d1[0][2]
-    fjs["master"]["lens_params"]['k4'] = d1[0][3]
-    fjs["master"]["lens_params"]['k5'] = d1[0][4]
-    fjs["master"]["lens_params"]['k6'] = d1[0][5]
-    fjs["master"]["lens_params"]['k7'] = d1[0][6]
-    fjs["master"]["lens_params"]['k8'] = d1[0][7]
+    fjs["master"]["lens_params"]['p1'] = d1[0][2]
+    fjs["master"]["lens_params"]['p2'] = d1[0][3]
+    fjs["master"]["lens_params"]['k3'] = d1[0][4]
+    fjs["master"]["lens_params"]['k4'] = d1[0][5]
+    fjs["master"]["lens_params"]['k5'] = d1[0][6]
+    fjs["master"]["lens_params"]['k6'] = d1[0][7]
     # fjs["slave"]["lens_params"]['focal_len'] = M2[0][0], M2[1][1]
     fjs["slave"]["lens_params"]['focal_len'] = M2[0][0], M2[1][1]
     fjs["slave"]["lens_params"]['principal_point'] = M2[0][2], M2[1][2]
     fjs["slave"]["lens_params"]['k1'] = d2[0][0]
     fjs["slave"]["lens_params"]['k2'] = d2[0][1]
-    fjs["slave"]["lens_params"]['k3'] = d2[0][2]
-    fjs["slave"]["lens_params"]['k4'] = d2[0][3]
-    fjs["slave"]["lens_params"]['k5'] = d2[0][4]
-    fjs["slave"]["lens_params"]['k6'] = d2[0][5]
-    fjs["slave"]["lens_params"]['k7'] = d2[0][6]
-    fjs["slave"]["lens_params"]['k8'] = d2[0][7]
+    fjs["slave"]["lens_params"]['p1'] = d2[0][2]
+    fjs["slave"]["lens_params"]['p2'] = d2[0][3]
+    fjs["slave"]["lens_params"]['k3'] = d2[0][4]
+    fjs["slave"]["lens_params"]['k4'] = d2[0][5]
+    fjs["slave"]["lens_params"]['k5'] = d2[0][6]
+    fjs["slave"]["lens_params"]['k6'] = d2[0][7]
     print("*" * 50)
 
     # fjs["slave"]["camera_pose"]['trans'] = *T[0], *T[1], *T[2]
@@ -1395,17 +1395,18 @@ class StereoCalibration(object):
             flags = opt1
         else:
             flags = 0
-            # tflags |= cv2.CALIB_FIX_INTRINSIC
-            # tflags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+            # flags |= cv2.CALIB_FIX_INTRINSIC
+            # flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
             flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-            # tflags |= cv2.CALIB_FIX_FOCAL_LENGTH
+            # flags |= cv2.CALIB_FIX_FOCAL_LENGTH
             flags |= cv2.CALIB_FIX_ASPECT_RATIO
             flags |= cv2.CALIB_ZERO_TANGENT_DIST
-            # tflags |= cv2.CALIB_RATIONAL_MODEL
-            # tflags |= cv2.CALIB_SAME_FOCAL_LENGTH
-            flags |= cv2.CALIB_FIX_K3
-            flags |= cv2.CALIB_FIX_K4
+            flags |= cv2.CALIB_RATIONAL_MODEL
+            # flags |= cv2.CALIB_SAME_FOCAL_LENGTH
+            # flags |= cv2.CALIB_FIX_K3
+            # flags |= cv2.CALIB_FIX_K4
             flags |= cv2.CALIB_FIX_K5
+            flags |= cv2.CALIB_FIX_K6
 
         if(cal_loadjson != None):
             m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, m_k6, m_k7, m_k8, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, s_k6, s_k7, s_k8, tranx, trany, tranz, rotx, roty, rotz, calib_res \
@@ -1416,12 +1417,12 @@ class StereoCalibration(object):
             m_cy = s_cy = default_camera_param_cy
             m_k1 = s_k1 = default_camera_param_k1
             m_k2 = s_k2 = default_camera_param_k2
-            m_k3 = s_k3 = default_camera_param_k3
-            m_k4 = s_k4 = default_camera_param_k4
-            m_k5 = s_k5 = default_camera_param_k5
-            m_k6 = s_k6 = default_camera_param_k6
-            m_k7 = s_k7 = default_camera_param_k7
-            m_k8 = s_k8 = default_camera_param_k8
+            m_k3 = s_k3 = default_camera_param_p1
+            m_k4 = s_k4 = default_camera_param_p2
+            m_k5 = s_k5 = default_camera_param_k3
+            m_k6 = s_k6 = default_camera_param_k4
+            m_k7 = s_k7 = default_camera_param_k5
+            m_k8 = s_k8 = default_camera_param_k6
             calib_res = [image_width,image_height]
             tranx = trany = tranz = rotx = roty = rotz = 0.0
 
@@ -1512,11 +1513,13 @@ class StereoCalibration(object):
             # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
             self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
             self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
-            # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
+            self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
             # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-            self.stereo_flags |= cv2.CALIB_FIX_K3
-            self.stereo_flags |= cv2.CALIB_FIX_K4
+            # self.stereo_flags |= cv2.CALIB_FIX_K3
+            # self.stereo_flags |= cv2.CALIB_FIX_K4
             self.stereo_flags |= cv2.CALIB_FIX_K5
+            self.stereo_flags |= cv2.CALIB_FIX_K6
+
 
         self.camera_model = self.stereo_camera_calibrate(img_shape)
 
@@ -1569,12 +1572,12 @@ class StereoCalibration(object):
             m_cy = s_cy = default_camera_param_cy
             m_k1 = s_k1 = default_camera_param_k1
             m_k2 = s_k2 = default_camera_param_k2
-            m_k3 = s_k3 = default_camera_param_k3
-            m_k4 = s_k4 = default_camera_param_k4
-            m_k5 = s_k5 = default_camera_param_k5
-            m_k6 = s_k6 = default_camera_param_k6
-            m_k7 = s_k7 = default_camera_param_k7
-            m_k8 = s_k8 = default_camera_param_k8
+            m_k3 = s_k3 = default_camera_param_p1
+            m_k4 = s_k4 = default_camera_param_p2
+            m_k5 = s_k5 = default_camera_param_k3
+            m_k6 = s_k6 = default_camera_param_k4
+            m_k7 = s_k7 = default_camera_param_k5
+            m_k8 = s_k8 = default_camera_param_k6
             calib_res = [image_width,image_height]
             tranx = trany = tranz = rotx = roty = rotz = 0.0
 
@@ -1642,11 +1645,13 @@ class StereoCalibration(object):
             # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
             self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
             self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
-            # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
+            self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
             # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-            self.stereo_flags |= cv2.CALIB_FIX_K3
-            self.stereo_flags |= cv2.CALIB_FIX_K4
+            # self.stereo_flags |= cv2.CALIB_FIX_K3
+            # self.stereo_flags |= cv2.CALIB_FIX_K4
             self.stereo_flags |= cv2.CALIB_FIX_K5
+            self.stereo_flags |= cv2.CALIB_FIX_K6
+
 
         self.camera_model = self.stereo_camera_calibrate(img_shape)
 
@@ -1845,11 +1850,13 @@ class StereoCalibration(object):
             # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
             self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
             self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
-            # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
+            self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
             # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-            self.stereo_flags |= cv2.CALIB_FIX_K3
-            self.stereo_flags |= cv2.CALIB_FIX_K4
+            # self.stereo_flags |= cv2.CALIB_FIX_K3
+            # self.stereo_flags |= cv2.CALIB_FIX_K4
             self.stereo_flags |= cv2.CALIB_FIX_K5
+            self.stereo_flags |= cv2.CALIB_FIX_K6
+
 
         self.camera_model = self.stereo_camera_calibrate(img_shape)
         # print(self.camera_model)
@@ -1994,17 +2001,19 @@ class StereoCalibration(object):
             flags = opt1
         else:
             flags = 0
-            # tflags |= cv2.CALIB_FIX_INTRINSIC
-            # tflags |= cv2.CALIB_FIX_PRINCIPAL_POINT
+            # flags |= cv2.CALIB_FIX_INTRINSIC
+            # flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
             flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-            # tflags |= cv2.CALIB_FIX_FOCAL_LENGTH
+            # flags |= cv2.CALIB_FIX_FOCAL_LENGTH
             flags |= cv2.CALIB_FIX_ASPECT_RATIO
             flags |= cv2.CALIB_ZERO_TANGENT_DIST
-            # tflags |= cv2.CALIB_RATIONAL_MODEL
-            # tflags |= cv2.CALIB_SAME_FOCAL_LENGTH
-            flags |= cv2.CALIB_FIX_K3
-            flags |= cv2.CALIB_FIX_K4
+            flags |= cv2.CALIB_RATIONAL_MODEL
+            # flags |= cv2.CALIB_SAME_FOCAL_LENGTH
+            # flags |= cv2.CALIB_FIX_K3
+            # flags |= cv2.CALIB_FIX_K4
             flags |= cv2.CALIB_FIX_K5
+            flags |= cv2.CALIB_FIX_K6
+
 
         # default param (if you need to change default param, please change this value)
         camera_matrix = np.zeros((3, 3), np.float32)
@@ -2017,12 +2026,12 @@ class StereoCalibration(object):
         dist_coef = np.zeros((1, 8), np.float32)
         dist_coef[0][0] = default_camera_param_k1
         dist_coef[0][1] = default_camera_param_k2
-        dist_coef[0][2] = default_camera_param_k3
-        dist_coef[0][3] = default_camera_param_k4
-        dist_coef[0][4] = default_camera_param_k5
-        dist_coef[0][5] = default_camera_param_k6
-        dist_coef[0][6] = default_camera_param_k7
-        dist_coef[0][7] = default_camera_param_k8
+        dist_coef[0][2] = default_camera_param_p1
+        dist_coef[0][3] = default_camera_param_p2
+        dist_coef[0][4] = default_camera_param_k3
+        dist_coef[0][5] = default_camera_param_k4
+        dist_coef[0][6] = default_camera_param_k5
+        dist_coef[0][7] = default_camera_param_k6
 
         print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f]' % (camera_matrix[0][0], camera_matrix[1][1], camera_matrix[0][2], camera_matrix[1][2], dist_coef[0][0], dist_coef[0][1], dist_coef[0][2], dist_coef[0][3], dist_coef[0][4], dist_coef[0][5], dist_coef[0][6], dist_coef[0][7]))
         print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f]' % (camera_matrix[0][0], camera_matrix[1][1], camera_matrix[0][2], camera_matrix[1][2], dist_coef[0][0], dist_coef[0][1], dist_coef[0][2], dist_coef[0][3], dist_coef[0][4], dist_coef[0][5], dist_coef[0][6], dist_coef[0][7]))
@@ -2085,11 +2094,13 @@ class StereoCalibration(object):
             # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
             self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
             self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
-            # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
+            self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
             # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-            self.stereo_flags |= cv2.CALIB_FIX_K3
-            self.stereo_flags |= cv2.CALIB_FIX_K4
+            # self.stereo_flags |= cv2.CALIB_FIX_K3
+            # self.stereo_flags |= cv2.CALIB_FIX_K4
             self.stereo_flags |= cv2.CALIB_FIX_K5
+            self.stereo_flags |= cv2.CALIB_FIX_K6
+
 
 
         self.camera_model = self.stereo_camera_calibrate(img_shape)
