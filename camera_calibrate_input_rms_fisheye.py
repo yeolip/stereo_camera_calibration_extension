@@ -137,7 +137,7 @@ default_camera_param_k1 = 0
 default_camera_param_k2 = 0
 default_camera_param_k3 = 0
 default_camera_param_k4 = 0
-default_camera_param_k5 = 0
+
 ###########################################################
 
 def check_version_of_opencv():
@@ -187,14 +187,12 @@ def load_value_from_json(filename):
     m_k2 = fjs["master"]["lens_params"]['k2']
     m_k3 = fjs["master"]["lens_params"]['k3']
     m_k4 = fjs["master"]["lens_params"]['k4']
-    m_k5 = fjs["master"]["lens_params"]['k5']
     s_fx, s_fy = fjs["slave"]["lens_params"]['focal_len']
     s_cx, s_cy = fjs["slave"]["lens_params"]['principal_point']
     s_k1 = fjs["slave"]["lens_params"]['k1']
     s_k2 = fjs["slave"]["lens_params"]['k2']
     s_k3 = fjs["slave"]["lens_params"]['k3']
     s_k4 = fjs["slave"]["lens_params"]['k4']
-    s_k5 = fjs["slave"]["lens_params"]['k5']
     print("*" * 50)
 
     m_ttrans = np.zeros((3, 1))
@@ -233,10 +231,6 @@ def load_value_from_json(filename):
             trany = - trany
             rotx = - rotx
             roty = - roty
-            m_k3 = -m_k3
-            m_k4 = -m_k4
-            s_k3 = -s_k3
-            s_k4 = -s_k4
     elif (m_ttrans[0] == 0 and m_ttrans[1] == 0 and m_ttrans[2] == 0 and m_trot[0] == 0 and m_trot[1] == 0 and m_trot[2] == 0):
         print("master trans(0,0,0), rot(0,0,0)")
         # print(s_trot, s_ttrans)
@@ -263,13 +257,9 @@ def load_value_from_json(filename):
             trany = - trany
             rotx = - rotx
             roty = - roty
-            m_k3 = -m_k3
-            m_k4 = -m_k4
-            s_k3 = -s_k3
-            s_k4 = -s_k4
     #################################################################3
-    print('|master    [ %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f]'%(m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5))
-    print('|slave     [ %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f]'%(s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5))
+    print('|master    [ %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f]'%(m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4))
+    print('|slave     [ %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f]'%(s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4))
     print('|trans     [ %.8f, %.8f, %.8f]'%(tranx, trany, tranz))
     print('|rot_radian[ %.8f, %.8f, %.8f]'%(rotx * degreeToRadian, roty * degreeToRadian, rotz * degreeToRadian))
     print('|rot_degree[ %.8f, %.8f, %.8f]'%(rotx, roty, rotz)  , '\n///////////////')
@@ -278,14 +268,19 @@ def load_value_from_json(filename):
     fp.close()
 
     # return value is plus focal length, and position of rot and trans from left to right
-    return m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, \
+    return m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, tranx, trany, tranz, \
            rotx * degreeToRadian, roty * degreeToRadian, rotz * degreeToRadian, calib_res
 
 
 ###save with result to stereo_config.json
 def convert(o):
-    if isinstance(o, np.float64):
+    if isinstance(o, (np.int64, np.int32)):
         return int(o)
+    if isinstance(o, (np.float64, np.float32)):
+        return float(o)
+    if isinstance(o, (np.ndarray)):
+        # if not isinstance(o[0], (object)):
+        return float(o[0])
     print(o, type(o))
     raise TypeError
 
@@ -383,16 +378,16 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
 
     fjs["master"]["lens_params"]['focal_len'] = tM1[0][0], tM1[1][1]
     fjs["master"]["lens_params"]['principal_point'] = tM1[0][2], tM1[1][2]
-    fjs["master"]["lens_params"]['k1'] = list(td1[0])
-    fjs["master"]["lens_params"]['k2'] = list(td1[1])
-    fjs["master"]["lens_params"]['k3'] = list(td1[2])
-    fjs["master"]["lens_params"]['k4'] = list(td1[3])
+    fjs["master"]["lens_params"]['k1'] = td1[0]
+    fjs["master"]["lens_params"]['k2'] = td1[1]
+    fjs["master"]["lens_params"]['k3'] = td1[2]
+    fjs["master"]["lens_params"]['k4'] = td1[3]
     fjs["slave"]["lens_params"]['focal_len'] = tM2[0][0], tM2[1][1]
     fjs["slave"]["lens_params"]['principal_point'] = tM2[0][2], tM2[1][2]
-    fjs["slave"]["lens_params"]['k1'] = list(td2[0])
-    fjs["slave"]["lens_params"]['k2'] = list(td2[1])
-    fjs["slave"]["lens_params"]['k3'] = list(td2[2])
-    fjs["slave"]["lens_params"]['k4'] = list(td2[3])
+    fjs["slave"]["lens_params"]['k1'] = td2[0]
+    fjs["slave"]["lens_params"]['k2'] = td2[1]
+    fjs["slave"]["lens_params"]['k3'] = td2[2]
+    fjs["slave"]["lens_params"]['k4'] = td2[3]
     print("*" * 50)
 
     fjs["master"]["lens_params"]['calib_res'] = imgsize
@@ -452,7 +447,6 @@ def modify_value_from_json_from_plus_to_minus_focal(path, filename, M1, d1, M2, 
     fjs["master"]["lens_params"]['k2'] = d1[0][1]
     fjs["master"]["lens_params"]['k3'] = d1[0][2]
     fjs["master"]["lens_params"]['k4'] = d1[0][3]
-    fjs["master"]["lens_params"]['k5'] = d1[0][4]
     # fjs["slave"]["lens_params"]['focal_len'] = M2[0][0], M2[1][1]
     fjs["slave"]["lens_params"]['focal_len'] = M2[0][0], M2[1][1]
     fjs["slave"]["lens_params"]['principal_point'] = M2[0][2], M2[1][2]
@@ -460,7 +454,6 @@ def modify_value_from_json_from_plus_to_minus_focal(path, filename, M1, d1, M2, 
     fjs["slave"]["lens_params"]['k2'] = d2[0][1]
     fjs["slave"]["lens_params"]['k3'] = d2[0][2]
     fjs["slave"]["lens_params"]['k4'] = d2[0][3]
-    fjs["slave"]["lens_params"]['k5'] = d2[0][4]
     print("*" * 50)
 
     # fjs["slave"]["camera_pose"]['trans'] = *T[0], *T[1], *T[2]
@@ -693,7 +686,7 @@ def least_squares_stereo_rmse(x, tobj_point, timgpoint_l, timgpoint_r, A1, D1, A
     total_points += len(tobj_point)
 
     # calculate world <-> cam2 transformation
-    rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
+    rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
     # print('rvec_r', 'tvec_r', rvec_r, tvec_r)
 
     # compute reprojection error for cam2
@@ -788,7 +781,7 @@ def least_squares_stereo_rmse4(x, tobj_point, timgpoint_l, timgpoint_r, A1, D1, 
     rvec_l = x[0:3]
     tvec_l = x[3:6]
     rp_l, _ = cv2.fisheye.projectPoints(tobj_point, rvec_l, tvec_l, A1, D1)
-    rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
+    rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
     rp_r, _ = cv2.fisheye.projectPoints(tobj_point, rvec_r, tvec_r, A2, D2)
 
     residuals = np.vstack([np.float64(rp_l - timgpoint_l), np.float64(rp_r - timgpoint_r)]).ravel()
@@ -1233,13 +1226,17 @@ class StereoCalibration(object):
                 print(i+1, 'st point loaded')
                 ref_point, img_point_l, img_point_r = load_point_from_csv(fname)
 
-                self.objpoints.append(ref_point)
+                self.objpoints.append(np.asarray(ref_point))
                 # self.objpoints.append(self.objp_center)
-                self.imgpoints_l.append(img_point_l)
-                self.imgpoints_r.append(img_point_r)
+                self.imgpoints_l.append(np.asarray(img_point_l))
+                self.imgpoints_r.append(np.asarray(img_point_r))
+            self.imgpoints_l = np.expand_dims(np.asarray(self.imgpoints_l), -2)
+            self.imgpoints_r = np.expand_dims(np.asarray(self.imgpoints_r), -2)
 
-        m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res = load_value_from_json(
-            cal_loadjson)
+        self.objpoints = np.expand_dims(np.asarray(self.objpoints), -2)
+
+        m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, tranx, trany, tranz, rotx, roty, rotz, calib_res \
+            = load_value_from_json(cal_loadjson)
 
         if(enable_intrinsic_plus_focal == 0):       # plus: 1,   minus: 0
             m_fx = -m_fx
@@ -1250,10 +1247,6 @@ class StereoCalibration(object):
             trany = - trany
             rotx = - rotx
             roty = - roty
-            m_k3 = -m_k3
-            m_k4 = -m_k4
-            s_k3 = -s_k3
-            s_k4 = -s_k4
 
         camera_matrix_l = np.zeros((3, 3), np.float64)
         camera_matrix_l[0][0] = m_fx
@@ -1262,12 +1255,11 @@ class StereoCalibration(object):
         camera_matrix_l[1][2] = m_cy
         camera_matrix_l[2][2] = 1.0
 
-        dist_coef_l = np.zeros((1, 5), np.float64)
-        dist_coef_l[0][0] = m_k1
-        dist_coef_l[0][1] = m_k2
-        dist_coef_l[0][2] = m_k3
-        dist_coef_l[0][3] = m_k4
-        dist_coef_l[0][4] = m_k5
+        dist_coef_l = np.zeros((4, 1), np.float64)
+        dist_coef_l[0] = m_k1
+        dist_coef_l[1] = m_k2
+        dist_coef_l[2] = m_k3
+        dist_coef_l[3] = m_k4
 
         camera_matrix_r = np.zeros((3, 3), np.float64)
         camera_matrix_r[0][0] = s_fx
@@ -1276,12 +1268,11 @@ class StereoCalibration(object):
         camera_matrix_r[1][2] = s_cy
         camera_matrix_r[2][2] = 1.0
 
-        dist_coef_r = np.zeros((1, 5), np.float64)
-        dist_coef_r[0][0] = s_k1
-        dist_coef_r[0][1] = s_k2
-        dist_coef_r[0][2] = s_k3
-        dist_coef_r[0][3] = s_k4
-        dist_coef_r[0][4] = s_k5
+        dist_coef_r = np.zeros((4, 1), np.float64)
+        dist_coef_r[0] = s_k1
+        dist_coef_r[1] = s_k2
+        dist_coef_r[2] = s_k3
+        dist_coef_r[3] = s_k4
 
         # self.M1 = camera_matrix_l
         # self.d1 = dist_coef_l
@@ -1289,8 +1280,8 @@ class StereoCalibration(object):
         # self.d2 = dist_coef_r
         img_shape = (calib_res[0], calib_res[1])
 
-        print('ret [ %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f]' % (m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5))
-        print('ret [ %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f]' % (s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5))
+        print('ret [ %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f]' % (m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4))
+        print('ret [ %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f, %.8f]' % (s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4))
         print('ret | trans [ %.8f, %.8f, %.8f]' % (tranx, trany, tranz), 'rot_radian[ %.8f, %.8f, %.8f]' % (rotx, roty, rotz))
 
         # rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrate(self.objpoints, self.imgpoints_l, img_shape, camera_matrix,dist_coef, flags=flags)
@@ -1359,30 +1350,35 @@ class StereoCalibration(object):
             print(i + 1, 'st point loaded')
             ref_point, img_point_l, img_point_r = load_point_from_csv(fname)
 
-            self.objpoints.append(ref_point)
+            #ref_point2 = np.expand_dims(np.asarray(ref_point), -2)
+
+            self.objpoints.append(np.asarray(ref_point))
             # self.objpoints.append(self.objp_center)
-            self.imgpoints_l.append(img_point_l)
-            self.imgpoints_r.append(img_point_r)
+            self.imgpoints_l.append(np.asarray(img_point_l))
+            self.imgpoints_r.append(np.asarray(img_point_r))
+
+        self.objpoints = np.expand_dims(np.asarray(self.objpoints), -2)
+        self.imgpoints_l = np.expand_dims(np.asarray(self.imgpoints_l), -2)
+        self.imgpoints_r = np.expand_dims(np.asarray(self.imgpoints_r), -2)
 
         print("//////read_points_with_mono_stereo/////////")
         if(opt1 != None):
             flags = opt1
         else:
             flags = 0
-            # tflags |= cv2.CALIB_FIX_INTRINSIC
-            # tflags |= cv2.CALIB_FIX_PRINCIPAL_POINT
-            flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-            # tflags |= cv2.CALIB_FIX_FOCAL_LENGTH
-            flags |= cv2.CALIB_FIX_ASPECT_RATIO
-            flags |= cv2.CALIB_ZERO_TANGENT_DIST
-            # tflags |= cv2.CALIB_RATIONAL_MODEL
-            # tflags |= cv2.CALIB_SAME_FOCAL_LENGTH
-            flags |= cv2.CALIB_FIX_K3
-            flags |= cv2.CALIB_FIX_K4
-            flags |= cv2.CALIB_FIX_K5
+            # flags |= cv2.fisheye.CALIB_FIX_INTRINSIC
+            # flags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
+            flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
+            flags |= cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC
+            flags |= cv2.fisheye.CALIB_CHECK_COND
+            flags |= cv2.fisheye.CALIB_FIX_SKEW
+            #flags |= cv2.fisheye.CALIB_FIX_K1
+            #flags |= cv2.fisheye.CALIB_FIX_K2
+            #flags |= cv2.fisheye.CALIB_FIX_K3
+            #flags |= cv2.fisheye.CALIB_FIX_K4
 
         if(cal_loadjson != None):
-            m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res \
+            m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, tranx, trany, tranz, rotx, roty, rotz, calib_res \
                 = load_value_from_json(cal_loadjson)
         else:
             m_fx = m_fy = s_fx = s_fy = default_camera_param_f
@@ -1392,7 +1388,6 @@ class StereoCalibration(object):
             m_k2 = s_k2 = default_camera_param_k2
             m_k3 = s_k3 = default_camera_param_k3
             m_k4 = s_k4 = default_camera_param_k4
-            m_k5 = s_k5 = default_camera_param_k5
             calib_res = [image_width,image_height]
             tranx = trany = tranz = rotx = roty = rotz = 0.0
 
@@ -1403,12 +1398,11 @@ class StereoCalibration(object):
         camera_matrix_l[1][2] = m_cy
         camera_matrix_l[2][2] = 1.0
 
-        dist_coef_l = np.zeros((1, 5), np.float64)
-        dist_coef_l[0][0] = m_k1
-        dist_coef_l[0][1] = m_k2
-        dist_coef_l[0][2] = m_k3
-        dist_coef_l[0][3] = m_k4
-        dist_coef_l[0][4] = m_k5
+        dist_coef_l = np.zeros((4, 1), np.float64)
+        dist_coef_l[0] = m_k1
+        dist_coef_l[1] = m_k2
+        dist_coef_l[2] = m_k3
+        dist_coef_l[3] = m_k4
 
         camera_matrix_r = np.zeros((3, 3), np.float64)
         camera_matrix_r[0][0] = s_fx
@@ -1417,12 +1411,11 @@ class StereoCalibration(object):
         camera_matrix_r[1][2] = s_cy
         camera_matrix_r[2][2] = 1.0
 
-        dist_coef_r = np.zeros((1, 5), np.float64)
-        dist_coef_r[0][0] = s_k1
-        dist_coef_r[0][1] = s_k2
-        dist_coef_r[0][2] = s_k3
-        dist_coef_r[0][3] = s_k4
-        dist_coef_r[0][4] = s_k5
+        dist_coef_r = np.zeros((4, 1), np.float64)
+        dist_coef_r[0] = s_k1
+        dist_coef_r[1] = s_k2
+        dist_coef_r[2] = s_k3
+        dist_coef_r[3] = s_k4
 
         # self.M1 = camera_matrix_l
         # self.d1 = dist_coef_l
@@ -1430,11 +1423,12 @@ class StereoCalibration(object):
         # self.d2 = dist_coef_r
         img_shape = (calib_res[0], calib_res[1])
 
-        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f, %.8f]' % (m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5))
-        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f, %.8f]' % (s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5))
+        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f]' % (m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4))
+        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f]' % (s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4))
         print('ret | trans [ %.8f, %.8f, %.8f]' % (tranx, trany, tranz), 'rot_radian[ %.8f, %.8f, %.8f]' % (rotx, roty, rotz))
 
         # single_rms_l, _, _ = self.reprojection_error2(self.objpoints, self.imgpoints_l, camera_matrix_l, dist_coef_l)
+
 
         rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrate(self.objpoints, self.imgpoints_l, img_shape, camera_matrix_l, dist_coef_l, flags=flags)
         rt2, self.M2, self.d2, self.r2, self.t2 = cv2.fisheye.calibrate(self.objpoints, self.imgpoints_r, img_shape, camera_matrix_r, dist_coef_r, flags=flags)
@@ -1471,17 +1465,16 @@ class StereoCalibration(object):
             self.stereo_flags = opt2
         else:
             self.stereo_flags = 0
-            # self.stereo_flags |= cv2.CALIB_FIX_INTRINSIC
-            # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
-            self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-            # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
-            self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
-            self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
-            # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
-            # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-            self.stereo_flags |= cv2.CALIB_FIX_K3
-            self.stereo_flags |= cv2.CALIB_FIX_K4
-            self.stereo_flags |= cv2.CALIB_FIX_K5
+            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_INTRINSIC
+            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
+            self.stereo_flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
+            self.stereo_flags |= cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC
+            self.stereo_flags |= cv2.fisheye.CALIB_CHECK_COND
+            self.stereo_flags |= cv2.fisheye.CALIB_FIX_SKEW
+            #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K1
+            #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K2
+            #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K3
+            #self.stereo_flags |= cv2.fisheye.CALIB_FIX_K4
 
         self.camera_model = self.stereo_camera_calibrate(img_shape)
 
@@ -1520,12 +1513,17 @@ class StereoCalibration(object):
             print(i + 1, 'st point loaded')
             ref_point, img_point_l, img_point_r = load_point_from_csv(fname)
 
-            self.objpoints.append(ref_point)
-            self.imgpoints_l.append(img_point_l)
-            self.imgpoints_r.append(img_point_r)
+            self.objpoints.append(np.asarray(ref_point))
+            # self.objpoints.append(self.objp_center)
+            self.imgpoints_l.append(np.asarray(img_point_l))
+            self.imgpoints_r.append(np.asarray(img_point_r))
+
+        self.objpoints = np.expand_dims(np.asarray(self.objpoints), -2)
+        self.imgpoints_l = np.expand_dims(np.asarray(self.imgpoints_l), -2)
+        self.imgpoints_r = np.expand_dims(np.asarray(self.imgpoints_r), -2)
 
         if(cal_loadjson != None):
-            m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res \
+            m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, tranx, trany, tranz, rotx, roty, rotz, calib_res \
                 = load_value_from_json(cal_loadjson)
         else:
             m_fx = m_fy = s_fx = s_fy = default_camera_param_f
@@ -1535,7 +1533,6 @@ class StereoCalibration(object):
             m_k2 = s_k2 = default_camera_param_k2
             m_k3 = s_k3 = default_camera_param_k3
             m_k4 = s_k4 = default_camera_param_k4
-            m_k5 = s_k5 = default_camera_param_k5
             calib_res = [image_width,image_height]
             tranx = trany = tranz = rotx = roty = rotz = 0.0
 
@@ -1546,12 +1543,11 @@ class StereoCalibration(object):
         camera_matrix_l[1][2] = m_cy
         camera_matrix_l[2][2] = 1.0
 
-        dist_coef_l = np.zeros((1, 5), np.float32)
-        dist_coef_l[0][0] = m_k1
-        dist_coef_l[0][1] = m_k2
-        dist_coef_l[0][2] = m_k3
-        dist_coef_l[0][3] = m_k4
-        dist_coef_l[0][4] = m_k5
+        dist_coef_l = np.zeros((4,1), np.float32)
+        dist_coef_l[0] = m_k1
+        dist_coef_l[1] = m_k2
+        dist_coef_l[2] = m_k3
+        dist_coef_l[3] = m_k4
 
         camera_matrix_r = np.zeros((3, 3), np.float32)
         camera_matrix_r[0][0] = s_fx
@@ -1560,12 +1556,11 @@ class StereoCalibration(object):
         camera_matrix_r[1][2] = s_cy
         camera_matrix_r[2][2] = 1.0
 
-        dist_coef_r = np.zeros((1, 5), np.float32)
-        dist_coef_r[0][0] = s_k1
-        dist_coef_r[0][1] = s_k2
-        dist_coef_r[0][2] = s_k3
-        dist_coef_r[0][3] = s_k4
-        dist_coef_r[0][4] = s_k5
+        dist_coef_r = np.zeros((4, 1), np.float32)
+        dist_coef_r[0] = s_k1
+        dist_coef_r[1] = s_k2
+        dist_coef_r[2] = s_k3
+        dist_coef_r[3] = s_k4
 
         self.M1 = camera_matrix_l
         self.d1 = dist_coef_l
@@ -1573,8 +1568,8 @@ class StereoCalibration(object):
         self.d2 = dist_coef_r
         img_shape = (calib_res[0], calib_res[1])
 
-        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f, %.8f]' % (m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5))
-        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f, %.8f]' % (s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5))
+        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f]' % (m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4))
+        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f]' % (s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4))
         print('ret | trans [ %.8f, %.8f, %.8f]' % (tranx, trany, tranz), 'rot_radian[ %.8f, %.8f, %.8f]' % (rotx, roty, rotz))
 
         # rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrate(self.objpoints, self.imgpoints_l, img_shape, camera_matrix,dist_coef, flags=flags)
@@ -1733,8 +1728,9 @@ class StereoCalibration(object):
 
         save_coordinate_both_stereo_obj_img(cal_path, self.objpoints, self.imgpoints_l, self.imgpoints_r,
                                             count_ok_dual)
+        self.objpoints = np.expand_dims(np.asarray(self.objpoints), -2)
 
-        m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5, tranx, trany, tranz, rotx, roty, rotz, calib_res \
+        m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, tranx, trany, tranz, rotx, roty, rotz, calib_res \
             = load_value_from_json(cal_loadjson)
 
         camera_matrix_l = np.zeros((3, 3), np.float32)
@@ -1744,12 +1740,11 @@ class StereoCalibration(object):
         camera_matrix_l[1][2] = m_cy
         camera_matrix_l[2][2] = 1.0
 
-        dist_coef_l = np.zeros((1, 5), np.float32)
-        dist_coef_l[0][0] = m_k1
-        dist_coef_l[0][1] = m_k2
-        dist_coef_l[0][2] = m_k3
-        dist_coef_l[0][3] = m_k4
-        dist_coef_l[0][4] = m_k5
+        dist_coef_l = np.zeros((4, 1), np.float32)
+        dist_coef_l[0] = m_k1
+        dist_coef_l[1] = m_k2
+        dist_coef_l[2] = m_k3
+        dist_coef_l[3] = m_k4
 
         camera_matrix_r = np.zeros((3, 3), np.float32)
         camera_matrix_r[0][0] = s_fx
@@ -1758,12 +1753,11 @@ class StereoCalibration(object):
         camera_matrix_r[1][2] = s_cy
         camera_matrix_r[2][2] = 1.0
 
-        dist_coef_r = np.zeros((1, 5), np.float32)
-        dist_coef_r[0][0] = s_k1
-        dist_coef_r[0][1] = s_k2
-        dist_coef_r[0][2] = s_k3
-        dist_coef_r[0][3] = s_k4
-        dist_coef_r[0][4] = s_k5
+        dist_coef_r = np.zeros((4, 1), np.float32)
+        dist_coef_r[0] = s_k1
+        dist_coef_r[1] = s_k2
+        dist_coef_r[2] = s_k3
+        dist_coef_r[3] = s_k4
 
         self.M1 = camera_matrix_l
         self.d1 = dist_coef_l
@@ -1771,8 +1765,8 @@ class StereoCalibration(object):
         self.d2 = dist_coef_r
         img_shape = (calib_res[0], calib_res[1])
 
-        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f, %.8f]' % (m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4, m_k5))
-        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f, %.8f]' % (s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4, s_k5))
+        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f]' % (m_fx, m_fy, m_cx, m_cy, m_k1, m_k2, m_k3, m_k4))
+        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f]' % (s_fx, s_fy, s_cx, s_cy, s_k1, s_k2, s_k3, s_k4))
         print('ret | trans [ %.8f, %.8f, %.8f]' % (tranx, trany, tranz), 'rot_radian[ %.8f, %.8f, %.8f]' % (rotx, roty, rotz))
 
         # rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrate(self.objpoints, self.imgpoints_l, img_shape, camera_matrix_l,dist_coef_l, flags=flags)
@@ -1788,17 +1782,16 @@ class StereoCalibration(object):
             self.stereo_flags = opt2
         else:
             self.stereo_flags = 0
-            # self.stereo_flags |= cv2.CALIB_FIX_INTRINSIC
-            # self.stereo_flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
-            self.stereo_flags |= cv2.CALIB_USE_INTRINSIC_GUESS
-            # self.stereo_flags |= cv2.CALIB_FIX_FOCAL_LENGTH
-            self.stereo_flags |= cv2.CALIB_FIX_ASPECT_RATIO
-            self.stereo_flags |= cv2.CALIB_ZERO_TANGENT_DIST
-            # self.stereo_flags |= cv2.CALIB_RATIONAL_MODEL
-            # self.stereo_flags |= cv2.CALIB_SAME_FOCAL_LENGTH
-            self.stereo_flags |= cv2.CALIB_FIX_K3
-            self.stereo_flags |= cv2.CALIB_FIX_K4
-            self.stereo_flags |= cv2.CALIB_FIX_K5
+            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_INTRINSIC
+            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_PRINCIPAL_POINT
+            self.stereo_flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
+            self.stereo_flags |= cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC
+            self.stereo_flags |= cv2.fisheye.CALIB_CHECK_COND
+            self.stereo_flags |= cv2.fisheye.CALIB_FIX_SKEW
+            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_K1
+            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_K2
+            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_K3
+            # self.stereo_flags |= cv2.fisheye.CALIB_FIX_K4
 
         self.camera_model = self.stereo_camera_calibrate(img_shape)
         # print(self.camera_model)
@@ -1932,12 +1925,14 @@ class StereoCalibration(object):
 
             print(gray_l.shape[::-1])
             img_shape = gray_r.shape[::-1]
+
         # print(len(self.objpoints))
         # print(len(self.imgpoints_l))
         # print(len(self.imgpoints_r))
 
         save_coordinate_both_stereo_obj_img(cal_path, self.objpoints, self.imgpoints_l, self.imgpoints_r,
                                             count_ok_dual)
+        self.objpoints = np.expand_dims(np.asarray(self.objpoints), -2)
 
         if(opt1 != None):
             flags = opt1
@@ -1998,12 +1993,12 @@ class StereoCalibration(object):
 #        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f]' % (camera_matrix_l[0][0], camera_matrix_l[1][1], camera_matrix_l[0][2], camera_matrix_l[1][2], dist_coef_l[0][0], dist_coef_l[0][1], dist_coef_l[0][2], dist_coef_l[0][3]))
 #        print('ret [ %.6f, %.6f, %.6f, %.6f/ %.8f, %.8f, %.8f, %.8f]' % (camera_matrix_r[0][0], camera_matrix_r[1][1], camera_matrix_r[0][2], camera_matrix_r[1][2], dist_coef_r[0][0], dist_coef_r[0][1], dist_coef_r[0][2], dist_coef_r[0][3]))
 
-        objpoints2 = np.expand_dims(np.asarray(self.objpoints), -2)
-        rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrate(objpoints2, self.imgpoints_l, img_shape,
+        #objpoints2 = np.expand_dims(np.asarray(self.objpoints), -2)
+        rt, self.M1, self.d1, self.r1, self.t1 = cv2.fisheye.calibrate(self.objpoints, self.imgpoints_l, img_shape,
                                                                      camera_matrix_l,
                                                                      dist_coef_l, flags=flags)
         # objpoints2 = np.expand_dims(np.asarray(self.objpoints), -2)
-        rt2, self.M2, self.d2, self.r2, self.t2 = cv2.fisheye.calibrate(objpoints2, self.imgpoints_r, img_shape,
+        rt2, self.M2, self.d2, self.r2, self.t2 = cv2.fisheye.calibrate(self.objpoints, self.imgpoints_r, img_shape,
                                                                       camera_matrix_r,
                                                                       dist_coef_r, flags=flags)
 
@@ -2027,9 +2022,9 @@ class StereoCalibration(object):
         print('RMSE_Left', rt)
         print('RMSE_Right', rt2)
         print("=" * 50)
-        single_rms_l, _, _ = self.reprojection_error(objpoints2, self.imgpoints_l, self.r1, self.t1, self.M1,
+        single_rms_l, _, _ = self.reprojection_error(self.objpoints, self.imgpoints_l, self.r1, self.t1, self.M1,
                                                      self.d1)
-        single_rms_r, _, _ = self.reprojection_error(objpoints2, self.imgpoints_r, self.r2, self.t2, self.M2,
+        single_rms_r, _, _ = self.reprojection_error(self.objpoints, self.imgpoints_r, self.r2, self.t2, self.M2,
                                                      self.d2)
         print('RMSE_Left_verify', single_rms_l)
         print('RMSE_Right_verify', single_rms_r)
@@ -2113,13 +2108,13 @@ class StereoCalibration(object):
         lgit_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.01)
         lip_criteria = (cv2.TERM_CRITERIA_MAX_ITER    , 1, 0.5)
 
-        objpoints2 = np.expand_dims(np.asarray(self.objpoints), -2)
+        # objpoints2 = np.expand_dims(np.asarray(self.objpoints), -2)
 
         (major, minor, mdumuy) = check_version_of_opencv()
         print('opencv', major, minor, mdumuy)
 
         ret_rp, Ml, dl, Mr, dr, R, T = cv2.fisheye.stereoCalibrate(
-            objpoints2, self.imgpoints_l,
+            self.objpoints, self.imgpoints_l,
             self.imgpoints_r, self.M1, self.d1, self.M2,
             self.d2, dims,
             criteria=lgit_criteria, flags=self.stereo_flags)
@@ -2865,7 +2860,12 @@ class StereoCalibration(object):
         tot_error = 0
         total_points = 0
         for i in range(len(obj_points)):
-            ret, temp_rvecs, temp_tvecs = cv2.fisheye.solvePnP(obj_points[i], img_points[i], camera_matrix, dist_coeffs, flags=cv2.fisheye.SOLVEPNP_ITERATIVE  )
+            undistorted = cv2.fisheye.undistortPoints(img_points[i], camera_matrix, dist_coeffs)
+            Keye = np.eye(3)
+            Dzero = np.zeros((1, 5))
+            ret, temp_rvecs, temp_tvecs = cv2.solvePnP(obj_points[i], undistorted, Keye, Dzero, flags=cv2.SOLVEPNP_ITERATIVE)
+
+            #ret, temp_rvecs, temp_tvecs = cv2.solvePnP(obj_points[i], img_points[i], camera_matrix, dist_coeffs, flags=cv2.SOLVEPNP_ITERATIVE  )
             temp_rvecs[0] = temp_rvecs[0]
             temp_rvecs[1] = temp_rvecs[1]
             temp_rvecs[2] = temp_rvecs[2]
@@ -3013,7 +3013,7 @@ class StereoCalibration(object):
             # _, temp_rvecs, temp_tvecs = cv2.fisheye.solvePnP(obj_points[i], imgpoints_l[i], A1, D1, flags=cv2.fisheye.SOLVEPNP_ITERATIVE  )
             #print('temp_rvecs', 'temp_tvecs', temp_rvecs, temp_tvecs)
             # compute reprojection error for cam1
-            rp_l, _ = cv2.fisheye.projectPoints(objpoints2[i], rvec_l, tvec_l, A1, D1)
+            rp_l, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_l, tvec_l, A1, D1)
             #print( 'rp_l' , rp_l )
             #tot_error += np.sum(np.square(np.float64(imgpoints_l[i] - rp_l)))
             tot_error += np.sum(np.square(np.float64(rp_l - t_imgpoints_l)))
@@ -3024,15 +3024,15 @@ class StereoCalibration(object):
             #print('rvec_r tvec_r\n', rvec_r,'\n', tvec_r,'\n')
 
             # compute reprojection error for cam2
-            rp_r, _ = cv2.fisheye.projectPoints(objpoints2[i], rvec_r, tvec_r, A2, D2)
+            rp_r, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
             #print( 'rp_r' , rp_r )
             # tot_error += np.square(imgpoints_r[i] - rp_r).sum()
             tot_error += np.square(rp_r - t_imgpoints_r).sum()
-            total_points += len(objpoints2[i])
+            total_points += len(obj_points[i])
 
             #temp_error = np.square(rp_r - t_imgpoints_r).sum() + np.square(rp_l - t_imgpoints_l).sum()
             temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(np.square(np.float64(rp_r - t_imgpoints_r)))
-            temp_points = 2 * len(objpoints2[i])
+            temp_points = 2 * len(obj_points[i])
             temp_mean_error = np.sqrt(temp_error / temp_points)
             print(str(i+1) + 'st %.8f'%temp_mean_error)
             flog.write(str(i+1) + 'st %.8f\n'%temp_mean_error)
@@ -3574,9 +3574,16 @@ class StereoCalibration(object):
             t_imgpoints_l = imgpoints_l[i].reshape(-1, 1, 2)
             t_imgpoints_r = imgpoints_r[i].reshape(-1, 1, 2)
 
+            undistorted_l = cv2.fisheye.undistortPoints(t_imgpoints_l, A1, D1)
+            undistorted_r = cv2.fisheye.undistortPoints(t_imgpoints_r, A2, D2)
+            Keye = np.eye(3)
+            Dzero = np.zeros((1, 5))
+
             # Left optimizer
-            _, rvec_l, tvec_l = cv2.fisheye.solvePnP(obj_points[i], t_imgpoints_l, A1, D1, flags=cv2.fisheye.SOLVEPNP_ITERATIVE)
-            _, rvec_r, tvec_r = cv2.fisheye.solvePnP(obj_points[i], t_imgpoints_r, A2, D2, flags=cv2.fisheye.SOLVEPNP_ITERATIVE)
+            _, rvec_l, tvec_l = cv2.solvePnP(obj_points[i], undistorted_l, Keye, Dzero, flags=cv2.SOLVEPNP_ITERATIVE)
+            _, rvec_r, tvec_r = cv2.solvePnP(obj_points[i], undistorted_r, Keye, Dzero, flags=cv2.SOLVEPNP_ITERATIVE)
+            #_, rvec_l, tvec_l = cv2.fisheye.solvePnP(obj_points[i], t_imgpoints_l, A1, D1, flags=cv2.fisheye.SOLVEPNP_ITERATIVE)
+            #_, rvec_r, tvec_r = cv2.fisheye.solvePnP(obj_points[i], t_imgpoints_r, A2, D2, flags=cv2.fisheye.SOLVEPNP_ITERATIVE)
 
             pre_rvec_l = rvec_l
             pre_tvec_l = tvec_l
@@ -3623,7 +3630,7 @@ class StereoCalibration(object):
                 rvec_l = res['x'][0:3]
                 tvec_l = res['x'][3:6]
                 rp_l, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_l, tvec_l, A1, D1)
-                rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
+                rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
                 rp_r, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
                 temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(np.square(np.float64(rp_r - t_imgpoints_r)))
                 temp_points = 2 * len(obj_points[i])
@@ -3650,7 +3657,7 @@ class StereoCalibration(object):
                 rvec_l = res['x'][0:3]
                 tvec_l = res['x'][3:6]
                 rp_l, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_l, tvec_l, A1, D1)
-                rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
+                rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
                 rp_r, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
                 temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(
                     np.square(np.float64(rp_r - t_imgpoints_r)))
@@ -3679,7 +3686,7 @@ class StereoCalibration(object):
                 rvec_l = res['x'][0:3]
                 tvec_l = res['x'][3:6]
                 rp_l, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_l, tvec_l, A1, D1)
-                rvec_r, tvec_r = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
+                rvec_r, tvec_r = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
                 rp_r, _ = cv2.fisheye.projectPoints(obj_points[i], rvec_r, tvec_r, A2, D2)
                 temp_error = np.sum(np.square(np.float64(rp_l - t_imgpoints_l))) + np.sum(
                     np.square(np.float64(rp_r - t_imgpoints_r)))
@@ -3729,7 +3736,7 @@ class StereoCalibration(object):
             uR33_inv = cv2.Rodrigues(t_mat_inv[0:3, 0:3])[0]
             uT_inv = t_mat_inv[0:3, 3]
 
-            rvec_ext, tvec__ext = cv2.fisheye.composeRT(uR33_inv, uT_inv, rvec_r, tvec_r)[:2]
+            rvec_ext, tvec__ext = cv2.composeRT(uR33_inv, uT_inv, rvec_r, tvec_r)[:2]
 
             if (tLog == True):
                 print('\tret_ExtR [ %.8f, %.8f, %.8f] (radian)\n\tret_ExtT [ %.8f, %.8f, %.8f] (L->R)' % (
@@ -3746,7 +3753,7 @@ class StereoCalibration(object):
             total_points += len(obj_points[i])
 
             # calculate world <-> cam2 transformation
-            rvec_r2, tvec_r2 = cv2.fisheye.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
+            rvec_r2, tvec_r2 = cv2.composeRT(rvec_l, tvec_l, cv2.Rodrigues(R)[0], T)[:2]
             #print('rvec_r', 'tvec_r', rvec_r, tvec_r)
 
             # compute reprojection error for cam2
