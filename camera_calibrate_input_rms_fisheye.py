@@ -293,7 +293,7 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
     # fpd = pd.read_json(filename)
     # print("modify_value_from_json")
     # fp = open(filename + '_sample.json')
-    init_json = {'type': 'Calibration Parameter for Stereo Camera', 'version': 1.2, 'master': {'serial': 0, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'calib_res': [0, 0]}}, 'slave': {'serial': 1, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'calib_res': [0, 0]}}}
+    init_json = {'type': 'Fisheye Calibration Parameter for Stereo Camera', 'version': 3.0, 'master': {'serial': 0, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'calib_res': [0, 0]}}, 'slave': {'serial': 1, 'camera_pose': {'trans': [0.0, 0.0, 0.0], 'rot': [0.0, 0.0, 0.0]}, 'lens_params': {'focal_len': [0, 0], 'principal_point': [0, 0], 'skew': 0, 'k1': 0, 'k2': 0, 'k3': 0, 'k4': 0, 'calib_res': [0, 0]}}}
 
     fjson = json.dumps(init_json)
     # print(filename + '_sample.json')

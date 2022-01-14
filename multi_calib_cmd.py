@@ -13,8 +13,8 @@ import csv
 import datetime as dt
 #import scipy.optimize
 #import camera_calibrate_input_rms as stereoCalib
-import camera_calibrate_input_rms_ext as stereoCalib
-# import camera_calibrate_input_rms_fisheye as stereoCalib    #opt1 & opt2 flag have hard coding
+#import camera_calibrate_input_rms_ext as stereoCalib
+import camera_calibrate_input_rms_fisheye as stereoCalib    #opt1 & opt2 flag have hard coding
 
 # CALIB_CHECK_COND = 4
 # CALIB_FIX_INTRINSIC = 256
