@@ -1,6 +1,7 @@
 # Stereo camera calibration extension
 
-2018년도에 Stereo camera calibration의 생산 라인 카메라 셋업을 담당하게 되어, Stereo camera calibration의 성능 보장을 위해 opencv 기반의 검사 툴을 만들었고, 다양한 검증을 진행하였다. <BR>
+2018년도에 Stereo camera calibration의 생산 라인 카메라 셋업을 담당하게 되어, <BR>
+Stereo camera calibration의 성능 보장을 위해 opencv 기반의 검사 툴을 만들었고, 다양한 검증을 진행하였다. <BR>
 목적은 영상, 좌표점 등을 입력으로 하여, 두개의 카메라 켈리브레이션 알고리즘의 성능이 비슷한지를 비교하여보았다.(OpenCV vs 타사) <BR>
 2021년도 Distortion Rational, Thin Prime Model interface를 추가업데이트 하였고,<BR>
 2022년도 Fisheye model interface도 업데이트 하였다.<BR>
@@ -8,6 +9,20 @@
 일반 광각이나 좀더 정밀도를 원하는 경우, Rational model을 사용하면 되며, <BR>
 초광각 카메라일 경우 Fisheye model을 사용하길 추천드린다. <BR>
 각 모델별로 왜곡지수 계산법이 다르기 때문에 반드시 구분해서 사용해 주어야한다.<BR>
+	
+In 2018, I was responsible for the production line camera setup of stereo camera calibration, <BR>
+and to ensure the performance of stereo camera calibration, an opencv-based inspection tool was created <BR>
+and various verifications were performed. <BR>
+The purpose was to compare the performance of the two camera calibration algorithms <BR>
+by inputting images and coordinate points as input. (OpenCV vs. other companies) <BR>
+In 2021, Distortion Rational, Thin Prime Model interface were additionally updated, <BR>
+The 2022 Fisheye model interface was also updated. <BR>
+In general, normal calibration is sufficient to cover, <BR>
+But if you want a normal wide angle or more precision, you can use the Rational model, <BR>
+For ultra-wide-angle cameras, we recommend using the Fisheye model. <BR>
+Since the method of calculating the distortion index is different for each model, it must be used separately.<BR>
+
+
 
 ## Stereo camera calibration의 정의
 
