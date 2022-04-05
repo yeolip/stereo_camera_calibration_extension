@@ -107,13 +107,13 @@ import scipy.optimize
 
 ####select user option for debugging ###########################################
 enable_debug_detect_pattern_from_image = 0                 #true: 1, false: 0
-enable_debug_display_image_point_and_reproject_point = 0   #true: 1, false: 0
+enable_debug_display_image_point_and_reproject_point = 2   #true(from img): 1, false: 0, true(from white background): 2
 enable_debug_pose_estimation_display = 0                   #false: 0, all_enable: 1, left:2, right:3
 enable_debug_loop_moving_of_rot_and_trans = 1              #false: 0, left: 1, right:2
 
 enable_debug_dispatiry_estimation_display = 0              #true: 1, false: 0, debug: 2
-select_png_or_raw       = 0                                #png: 0, raw: 1
-select_point_or_arrow_based_on_reproject_point = 1         #point: 0, arrow: 1
+select_png_or_raw       = 1                                #png: 0, raw: 1
+select_point_or_arrow_based_on_reproject_point = 0         #point: 0, arrow: 1
 
 enable_intrinsic_plus_focal = 0                                 #plus: 1,   minus: 0
 enable_extrinsic_left_to_right = 0                              # left to right: 1,   right to left: 0
@@ -3896,7 +3896,7 @@ class StereoCalibration(object):
         if(start_x > width and start_y > width):
             # cv2.line(img, (int(start_x), int(start_y)), (int(end_x) , int(end_y)), color, thinkness)
             # cv2.line(img, (int(start_x), int(start_y)), (int(gap_x) , int(gap_y)), color, thinkness)
-            cv2.arrowedLine(img, (start_x, start_y), (gap_x, gap_y), (0, 0, 255), thickness=thinkness, tipLength=0.1)
+            cv2.arrowedLine(img, (start_x, start_y), (gap_x, gap_y), (0, 0, 255), thickness=thinkness, tipLength=0.3)
         else:
             print("error - invalid point")
         pass
@@ -3927,66 +3927,52 @@ class StereoCalibration(object):
             return
         print("\ndisplay_reprojection_point_and_image_point////\n")
 
-        if (select_png_or_raw == 1):
-            # print(cal_path + '/RIGHT/*.RAW')
-            images_right = glob.glob(cal_path + '/R*/*.RAW')
-            images_left = glob.glob(cal_path + '/L*/*.RAW')
-        else:
-            # print(cal_path + '/RIGHT/*.JPG')
-            images_right = glob.glob(cal_path + '/R*/*.JPG')
-            images_right += glob.glob(cal_path + '/R*/*.BMP')
-            images_right += glob.glob(cal_path + '/R*/*.PNG')
-            images_left = glob.glob(cal_path + '/L*/*.JPG')
-            images_left += glob.glob(cal_path + '/L*/*.PNG')
-            images_left += glob.glob(cal_path + '/L*/*.BMP')
+        if (enable_debug_display_image_point_and_reproject_point == 1):
+            if (select_png_or_raw == 1):
+                # print(cal_path + '/RIGHT/*.RAW')
+                images_right = glob.glob(cal_path + '/R*/*.RAW')
+                images_left = glob.glob(cal_path + '/L*/*.RAW')
+            else:
+                # print(cal_path + '/RIGHT/*.JPG')
+                images_right = glob.glob(cal_path + '/R*/*.JPG')
+                images_right += glob.glob(cal_path + '/R*/*.BMP')
+                images_right += glob.glob(cal_path + '/R*/*.PNG')
+                images_left = glob.glob(cal_path + '/L*/*.JPG')
+                images_left += glob.glob(cal_path + '/L*/*.PNG')
+                images_left += glob.glob(cal_path + '/L*/*.BMP')
 
-        if (select_png_or_raw == 1):
-            fd_l = open(images_left[0], 'rb')
-            fd_r = open(images_right[0], 'rb')
-            length = len(fd_l.read())
-            fd_l.seek(0)
-            #print(length)
-            rows = image_width
-            cols = int(length / rows)
-            f_l = np.fromfile(fd_l, dtype=np.uint8, count=rows * cols)
-            f_r = np.fromfile(fd_r, dtype=np.uint8, count=rows * cols)
-            gray_l = f_l.reshape((cols, rows))
-            gray_r = f_r.reshape((cols, rows))
-            fd_l.close
-            fd_r.close
-            img_l = cv2.cvtColor(gray_l, cv2.COLOR_GRAY2BGR)
-            img_r = cv2.cvtColor(gray_r, cv2.COLOR_GRAY2BGR)
-        else:
-            img_l = cv2.imread(images_left[0])
-            img_r = cv2.imread(images_right[0])
-            gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
-            gray_r = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)
+            if (select_png_or_raw == 1):
+                fd_l = open(images_left[0], 'rb')
+                fd_r = open(images_right[0], 'rb')
+                length = len(fd_l.read())
+                fd_l.seek(0)
+                #print(length)
+                rows = image_width
+                cols = int(length / rows)
+                f_l = np.fromfile(fd_l, dtype=np.uint8, count=rows * cols)
+                f_r = np.fromfile(fd_r, dtype=np.uint8, count=rows * cols)
+                gray_l = f_l.reshape((cols, rows))
+                gray_r = f_r.reshape((cols, rows))
+                fd_l.close
+                fd_r.close
+                img_l = cv2.cvtColor(gray_l, cv2.COLOR_GRAY2BGR)
+                img_r = cv2.cvtColor(gray_r, cv2.COLOR_GRAY2BGR)
+            else:
+                img_l = cv2.imread(images_left[0])
+                img_r = cv2.imread(images_right[0])
+                gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
+                gray_r = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)
 
-        for i, fname in enumerate(images_right):
-            # if (select_png_or_raw == 1):
-            #     fd_l = open(images_left[i], 'rb')
-            #     fd_r = open(images_right[i], 'rb')
-            #     length = len(fd_l.read())
-            #     fd_l.seek(0)
-            #     #print(length)
-            #     rows = image_width
-            #     cols = int(length / rows)
-            #     f_l = np.fromfile(fd_l, dtype=np.uint8, count=rows * cols)
-            #     f_r = np.fromfile(fd_r, dtype=np.uint8, count=rows * cols)
-            #     gray_l = f_l.reshape((cols, rows))
-            #     gray_r = f_r.reshape((cols, rows))
-            #     fd_l.close
-            #     fd_r.close
-            #     img_l = cv2.cvtColor(gray_l, cv2.COLOR_GRAY2BGR)
-            #     img_r = cv2.cvtColor(gray_r, cv2.COLOR_GRAY2BGR)
-            # else:
-            #     img_l = cv2.imread(images_left[i])
-            #     img_r = cv2.imread(images_right[i])
-            #
-            #     gray_l = cv2.cvtColor(img_l, cv2.COLOR_BGR2GRAY)
-            #     gray_r = cv2.cvtColor(img_r, cv2.COLOR_BGR2GRAY)
+        for i, fname in enumerate(imgpoint_right):
 
-            print(i, images_left[i],images_right[i] )
+            if (enable_debug_display_image_point_and_reproject_point == 2):
+                rows = image_width
+                cols = image_height
+                img_l = np.full((cols, rows, 3), 255, np.uint8)
+                img_r = np.full((cols, rows, 3), 255, np.uint8)
+
+
+            # print(i, images_left[i],images_right[i] )
             timgpoint_left = np.array(imgpoint_left[i])
             timgpoint_right = np.array(imgpoint_right[i])
             treproject_left = np.array(reproject_left[i])
@@ -3997,19 +3983,24 @@ class StereoCalibration(object):
             for j, jname in enumerate(timgpoint_left):
                 #print(timgpoint_left[j],'\t', treproject_left[j],'\t',timgpoint_right[j],'\t',treproject_right[j])
                 if(select_point_or_arrow_based_on_reproject_point == 0):
-                    self.draw_crossline(img_l, timgpoint_left[j][0], timgpoint_left[j][1], (0, 0, 255), 2)
-                    self.draw_crossline(img_l, treproject_left[j][0], treproject_left[j][1], (0, 255, 0), 2)
-                    self.draw_crossline(img_r, timgpoint_right[j][0], timgpoint_right[j][1], (0, 0, 255), 2)
-                    self.draw_crossline(img_r, treproject_right[j][0], treproject_right[j][1], (0, 255, 0), 2)
+                    self.draw_crossline(img_l, timgpoint_left[j][0], timgpoint_left[j][1], (0, 255, 0), 2)
+                    self.draw_crossline(img_l, treproject_left[j][0], treproject_left[j][1], (0, 0, 255), 2)
+                    self.draw_crossline(img_r, timgpoint_right[j][0], timgpoint_right[j][1], (0, 255, 0), 2)
+                    self.draw_crossline(img_r, treproject_right[j][0], treproject_right[j][1], (0, 0, 255), 2)
                 else:
-                    self.draw_arrow(img_l, timgpoint_left[j][0], timgpoint_left[j][1], treproject_left[j][0], treproject_left[j][1], (0, 0, 255), 2)
-                    self.draw_arrow(img_r, timgpoint_right[j][0], timgpoint_right[j][1], treproject_right[j][0], treproject_right[j][1], (0, 0, 255), 2)
+                    self.draw_arrow(img_l, treproject_left[j][0], treproject_left[j][1], timgpoint_left[j][0], timgpoint_left[j][1], (0, 0, 255), 2, 20)
+                    self.draw_arrow(img_r, treproject_right[j][0], treproject_right[j][1], timgpoint_right[j][0], timgpoint_right[j][1], (0, 0, 255), 2, 20)
 
             # Draw and display the corners
-            cv2.imshow("RMS_LeftImage  _ "+str(i+1)+ 'st image '+ images_left[i], img_l)
-            cv2.imshow("RMS_RightImage _ "+str(i+1)+ 'st image '+ images_right[i], img_r)
-            cv2.imwrite(cal_path + '/ReL%03d'%(i+1) +'.png', img_l)
-            cv2.imwrite(cal_path + '/ReR%03d'%(i+1) +'.png', img_r)
+            cv2.imshow("RMS_LeftImage  _ "+str(i+1)+ 'st image ', img_l)
+            cv2.imshow("RMS_RightImage _ "+str(i+1)+ 'st image ', img_r)
+            if (select_point_or_arrow_based_on_reproject_point == 0):
+                cv2.imwrite(cal_path + '/ReL%03d'%(i+1) +'.png', img_l)
+                cv2.imwrite(cal_path + '/ReR%03d'%(i+1) +'.png', img_r)
+            else:
+                cv2.imwrite(cal_path + '/ReL%03d_a'%(i+1) +'.png', img_l)
+                cv2.imwrite(cal_path + '/ReR%03d_a'%(i+1) +'.png', img_r)
+
             # cv2.waitKey(0)
 
         pass

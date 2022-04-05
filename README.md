@@ -118,12 +118,12 @@ Stereo camera calibration 데이터의 산포 or 분포를 확인할 때 사용�
 |  flag | Description     | Remark      |
 | -- | -- | --|
 | enable_debug_detect_pattern_from_image  |영상에 찾은 좌표점 그리기| true: 1, false: 0|
-| enable_debug_display_image_point_and_reproject_point   |영상의 좌표와 켈데이터를 이용한 re-projection좌표 표시| true: 1, false: 0|
+| enable_debug_display_image_point_and_reproject_point   |영상의 좌표와 켈데이터를 이용한 re-projection좌표 표시<BR> with white space or image| true(from img): 1, false: 0,<BR> true(from white background): 2|
 | enable_debug_pose_estimation_display |차트의 위치 X,Y,Z 3축 그리기| false: 0, all_enable: 1, left:2, right:3 |
 | enable_debug_loop_moving_of_rot_and_trans |두카메라간의 extrinsic param관계 그림| false: 0, left: 1, right:2  |
 | enable_debug_dispatiry_estimation_display |disparity distance검증을 위한 flag - 추가 distance파일 생성| true: 1, false: 0, debug: 2 |
 | select_png_or_raw       |영상압축포멧 유무 설정| png,jpg,bmp: 0,<BR> raw: 1  |
-| select_point_or_arrow_based_on_reproject_point |영상의 좌표와 켈데이터를 이용한 re-projection좌표와의 연결표시 | point: 0, arrow: 1 |
+| select_point_or_arrow_based_on_reproject_point |영상의 좌표와 켈데이터를 이용한 re-projection좌표와의 연결표시<BR> arrow (scale * 20) | point: 0, arrow: 1 |
 | enable_intrinsic_plus_focal |초첨거리<BR> 양수,음수 세팅가능| plus: 1,   minus: 0|
 | enable_extrinsic_left_to_right |두카메라간의 관계RT 변경가능<BR>(L->R) or (R->L)| left to right: 1,   right to left: 0|
 | select_detect_pattern   |차트 모양 선택| circle: 0, square: 1  |
@@ -358,6 +358,15 @@ Stereo camera calibration 데이터의 산포 or 분포를 확인할 때 사용�
 		},
 		"reprojection_error": 0.09303644
 	}
+
+## Image point vs Reprojected point based on calibration data
+<img  src = "./desc/reproject_and_imgpoint_01.png" width="873px"> </img>
++ green color + -> image point	
++ red color + -> reprojected point
++ arrow start -> image point
++ arrow end -> reprojected point
+<img  src = "./desc/reproject_and_imgpoint_02.png" width="873px"> </img>
++ display on white space instead of image
 
 ## Normal/Ext/Fisheye지원 Distortion extend parameter적용방법
 -	camera_calibrate_input_rms - 기존 k1,k2,p1,p2,k3지원 코드
