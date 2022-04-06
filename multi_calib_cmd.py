@@ -12,9 +12,9 @@ import sys  #, getopt
 import csv
 import datetime as dt
 #import scipy.optimize
-#import camera_calibrate_input_rms as stereoCalib
+import camera_calibrate_input_rms as stereoCalib
 #import camera_calibrate_input_rms_ext as stereoCalib
-import camera_calibrate_input_rms_fisheye as stereoCalib    #opt1 & opt2 flag have hard coding
+#import camera_calibrate_input_rms_fisheye as stereoCalib    #opt1 & opt2 flag have hard coding
 
 # CALIB_CHECK_COND = 4
 # CALIB_FIX_INTRINSIC = 256
@@ -75,7 +75,7 @@ CALIB_USE_INTRINSIC_GUESS = 1
 def user_calib_option(ttype, targetName):
     tflag = 0
     if(targetName == 'fisheye'):
-        if(ttype == 'BAGIC'):
+        if(ttype == 'BASIC'):
             tflag = CALIB_USE_INTRINSIC_GUESS|CALIB_CHECK_COND|CALIB_RECOMPUTE_EXTRINSIC|CALIB_FIX_SKEW
         elif(ttype == 'GUESS'): #current is not support skew. (we don't have skew interface)if you need, let me know.
             tflag = CALIB_USE_INTRINSIC_GUESS|CALIB_CHECK_COND|CALIB_RECOMPUTE_EXTRINSIC|CALIB_FIX_SKEW
@@ -84,7 +84,7 @@ def user_calib_option(ttype, targetName):
         elif (ttype == 'USER1'):
             tflag = CALIB_USE_INTRINSIC_GUESS|CALIB_CHECK_COND|CALIB_RECOMPUTE_EXTRINSIC
     else:
-        if(ttype == 'BAGIC'):
+        if(ttype == 'BASIC'):
             tflag = C_USE_INTRINSIC_GUESS|C_FIX_ASPECT_RATIO|C_ZERO_TANGENT_DIST|C_FIX_K3|C_FIX_K4|C_FIX_K5
         elif(ttype == 'GUESS'):
             tflag = C_USE_INTRINSIC_GUESS
@@ -151,11 +151,11 @@ class SearchManager(object):
                 print("\nIMAGE ", args.path_img)
                 objCal.initialize(args.path_img)
                 print(objCal.getName())
-                objCal.read_images_with_mono_stereo(args.path_img, opt1=user_calib_option('USER1',objCal.getName()), opt2=user_calib_option('USER1',objCal.getName()))
+                objCal.read_images_with_mono_stereo(args.path_img, opt1=user_calib_option('BASIC',objCal.getName()), opt2=user_calib_option('BASIC',objCal.getName()))
             elif (args.path_point != None):
                 print("\nPOINT ", args.path_point)
                 objCal.initialize(args.path_point)
-                objCal.read_points_with_mono_stereo(args.path_point, None, None, opt1=user_calib_option('BAGIC',objCal.getName()), opt2=user_calib_option('BAGIC',objCal.getName()))
+                objCal.read_points_with_mono_stereo(args.path_point, None, None, opt1=user_calib_option('BASIC',objCal.getName()), opt2=user_calib_option('BASIC',objCal.getName()))
                 # objCal.read_points_with_mono_stereo(args.path_point, None , None)
                 # objCal.read_points_with_stereo(args.path_point, None, None)
 
@@ -216,8 +216,8 @@ class SearchManager(object):
                         print("\nPOINT ", tpath)
                         objCal.initialize(tpath)
                         # print(user_calib_option('GUESS'))
-                        objCal.read_points_with_mono_stereo(tpath, None, None)
-                        # objCal.read_points_with_mono_stereo(tpath, None, None, opt1=user_calib_option('GUESS',objCal.getName()), opt2=user_calib_option('GUESS',objCal.getName()))
+                        # objCal.read_points_with_mono_stereo(tpath, None, None)
+                        objCal.read_points_with_mono_stereo(tpath, None, None, opt1=user_calib_option('BASIC',objCal.getName()), opt2=user_calib_option('BASIC',objCal.getName()))
 
 
             elif(args.action == 2):
@@ -228,8 +228,8 @@ class SearchManager(object):
                             print('\n###### ', tnum + 1, 'st#################')
                             print("\nIMAGE ", tpath)
                             objCal.initialize(tpath)
-                            objCal.read_param_and_images_with_stereo(tpath, args.path_json)
-                            # objCal.read_param_and_images_with_stereo(tpath, args.path_json, opt2=user_calib_option('FIX',objCal.getName()))
+                            # objCal.read_param_and_images_with_stereo(tpath, args.path_json)
+                            objCal.read_param_and_images_with_stereo(tpath, args.path_json, opt2=user_calib_option('FIX',objCal.getName()))
                     if (args.path_point != None and len(tlist_of_points) >= 1):
                         for tnum, tpath in enumerate(tlist_of_points):
                             print('\n###### ', tnum + 1, 'st#################')

@@ -107,13 +107,13 @@ import scipy.optimize
 
 ####select user option for debugging ###########################################
 enable_debug_detect_pattern_from_image = 0                 #true: 1, false: 0
-enable_debug_display_image_point_and_reproject_point = 2   #true(from img): 1, false: 0, true(from white background): 2
+enable_debug_display_image_point_and_reproject_point = 0   #true(from img): 1, false: 0, true(from white background): 2
 enable_debug_pose_estimation_display = 0                   #false: 0, all_enable: 1, left:2, right:3
 enable_debug_loop_moving_of_rot_and_trans = 1              #false: 0, left: 1, right:2
 
 enable_debug_dispatiry_estimation_display = 0              #true: 1, false: 0, debug: 2
-select_png_or_raw       = 1                                #png: 0, raw: 1
-select_point_or_arrow_based_on_reproject_point = 0         #point: 0, arrow: 1
+select_png_or_raw       = 0                                #png: 0, raw: 1
+select_point_or_arrow_based_on_reproject_point = 1         #point: 0, arrow: 1
 
 enable_intrinsic_plus_focal = 0                                 #plus: 1,   minus: 0
 enable_extrinsic_left_to_right = 0                              # left to right: 1,   right to left: 0
