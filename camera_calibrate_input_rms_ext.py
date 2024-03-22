@@ -1,4 +1,4 @@
-#       made by yeolip.yoon (magicst3@gmail.com)
+﻿#       made by yeolip.yoon (magicst3@gmail.com)
 #       camera_calibrate_input_depth ./square151
 #       camera_calibrate_input_depth ./cx_cy/ stereo_config_init.json ./input_csv/
 #       camera_calibrate_input_depth ./\input_lgit_964/ ./\input_lgit_964/stereo_config_result.json ./\input_lgit_964/
@@ -127,10 +127,11 @@ marker_length = 30      #pattern's gap (unit is mm)
 degreeToRadian = math.pi/180
 radianToDegree = 180/math.pi
 
-image_width = 1280
-image_height = 964
+#if you want to get good quality result, please set image's width and height.
+image_width = 1280    #4912
+image_height = 964    #3264
 
-default_camera_param_f = 1470
+default_camera_param_f = 1470   #3854
 default_camera_param_cx = image_width/2
 default_camera_param_cy = image_height/2
 default_camera_param_k1 = -0.1
@@ -1944,16 +1945,16 @@ class StereoCalibration(object):
                 # ret_r, corners_r = cv2.findChessboardCorners(gray_r, (marker_point_x, marker_point_y), flags=cv2.CALIB_CB_ADAPTIVE_THRESH)
             else:
                 blobPar = cv2.SimpleBlobDetector_Params()
-                blobPar.maxArea = 1000
-                blobPar.minArea = 20
+                blobPar.maxArea = 11000
+                blobPar.minArea = 18
                 # blobPar.minDistBetweenBlobs = 300
                 blobDet = cv2.SimpleBlobDetector_create(blobPar)
 
                 # flags = cv2.CALIB_CB_SYMMETRIC_GRID + cv2.CALIB_CB_CLUSTERING)
                 ret_l, corners_l = cv2.findCirclesGrid(gray_l, (marker_point_x, marker_point_y),
-                                                       flags=cv2.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
+                                                       flags=cv2.CALIB_CB_SYMMETRIC_GRID+ cv2.CALIB_CB_CLUSTERING, blobDetector=blobDet)
                 ret_r, corners_r = cv2.findCirclesGrid(gray_r, (marker_point_x, marker_point_y),
-                                                       flags=cv2.CALIB_CB_SYMMETRIC_GRID, blobDetector=blobDet)
+                                                       flags=cv2.CALIB_CB_SYMMETRIC_GRID+ cv2.CALIB_CB_CLUSTERING, blobDetector=blobDet)
 
             print((images_left[i], ret_l))
             print((images_right[i], ret_r))
@@ -1976,6 +1977,9 @@ class StereoCalibration(object):
                 if (enable_debug_detect_pattern_from_image == 1):
                     cv2.imshow(str(i + 1) + 'st image  _ ' + images_left[i], img_l)
                     cv2.waitKey(500)
+                # gray_test = cv2.resize(img_l,(1280,1080) )
+                # cv2.imshow("test", gray_test)
+                # cv2.waitKey(0)
 
                 if (select_detect_pattern == 1):
                     rt = cv2.cornerSubPix(gray_r, corners_r, (11, 11), (-1, -1), self.criteria)
@@ -4066,6 +4070,7 @@ class StereoCalibration(object):
             else:
                 cv2.imwrite(cal_path + '/ReL%03d_a'%(i+1) +'.png', img_l)
                 cv2.imwrite(cal_path + '/ReR%03d_a'%(i+1) +'.png', img_r)
+
             # cv2.waitKey(0)
 
         pass
