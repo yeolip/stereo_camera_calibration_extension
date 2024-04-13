@@ -147,6 +147,17 @@ def check_version_of_opencv():
 
 ###load point on csv file
 def load_point_from_csv(filename):
+    """
+    Load points from a CSV file and return reference points and corresponding image points for left and right images.
+    
+    Parameters:
+    filename (str): The name of the CSV file to load points from.
+    
+    Returns:
+    np.array: An array of reference points.
+    np.array: An array of image points for the left image.
+    np.array: An array of image points for the right image.
+    """
     ref_point = []
     img_point_l = []
     img_point_r = []
@@ -175,6 +186,13 @@ def load_point_from_csv(filename):
 ###load and get about stereo_config.json
 ### return value is plus focal length, and position of rot and trans from left to right
 def load_value_from_json(filename):
+    """
+    Load value from a JSON file and perform various operations to extract camera parameters.
+    Args:
+        filename (str): The path to the JSON file.
+    Returns:
+        tuple: A tuple containing camera parameters and calibration results.
+    """
     # fpd = pd.read_json(filename)
     print(filename)
     fp = open(filename)
@@ -291,6 +309,9 @@ def convert(o):
     raise TypeError
 
 def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp, E, F):
+    """
+    A function that modifies values from a JSON file based on certain conditions. The function takes in several parameters including path, filename, matrices M1 and M2, vectors d1 and d2, matrices R and T, imgsize, ret_rp, E, and F. The function performs various operations on the input values and generates a JSON output file with the modified values. 
+    """
     # fpd = pd.read_json(filename)
     # print("modify_value_from_json")
     # fp = open(filename + '_sample.json')
@@ -438,6 +459,26 @@ def modify_value_from_json(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp
 
 
 def modify_value_from_json_from_plus_to_minus_focal(path, filename, M1, d1, M2, d2, R, T, imgsize, ret_rp, E, F):
+    """
+    Modify values in a JSON file from plus to minus focal lengths. Update lens and camera parameters, reprojection error, essential matrix, and fundamental matrix in the JSON structure. Save the modified JSON to a new file.
+
+    Parameters:
+    - path: string, the directory path where the JSON file is located
+    - filename: string, the name of the JSON file
+    - M1: numpy array, the focal length and principal point values for the master camera
+    - d1: numpy array, the distortion coefficients for the master camera
+    - M2: numpy array, the focal length and principal point values for the slave camera
+    - d2: numpy array, the distortion coefficients for the slave camera
+    - R: numpy array, the rotation matrix
+    - T: numpy array, the translation vector
+    - imgsize: tuple, the image size
+    - ret_rp: float, the reprojection error
+    - E: numpy array, the essential matrix
+    - F: numpy array, the fundamental matrix
+
+    Returns:
+    None
+    """
     # fpd = pd.read_json(filename)
     # print("modify_value_from_json_from_plus_to_minus_focal")
     fp = open(filename + '_sample.json')
@@ -487,6 +528,9 @@ def modify_value_from_json_from_plus_to_minus_focal(path, filename, M1, d1, M2, 
 
 ###extarct and save coordinate point to csv file
 def save_coordinate_both_stereo_obj_img(path, objpoints, imgpoints_l, imgpoints_r, count_ok_dual):
+    """
+    Save stereo calibration results to files. This function takes in the file path to save the files, object points, left image points, right image points, and the count of successfully detected points. It saves the calculated points to CSV files.
+    """
     table = []
     refpointx = []
     refpointy = []
@@ -552,6 +596,19 @@ def save_coordinate_both_stereo_obj_img(path, objpoints, imgpoints_l, imgpoints_
     output.to_csv(path + '/' + "total_p_from_img.txt", index=False, header=False)
 
 def save_coordinate_using_rectify(path, objpoints, imgpoints_l, imgpoints_r, count_ok_dual):
+    """
+    Save coordinate using rectify function.
+
+    Parameters:
+    - path: The path to save the coordinate.
+    - objpoints: Object points.
+    - imgpoints_l: Image points left.
+    - imgpoints_r: Image points right.
+    - count_ok_dual: Count of OK dual.
+
+    Return:
+    - None
+    """
     table = []
     refpointx = []
     refpointy = []
@@ -599,6 +656,20 @@ def save_coordinate_using_rectify(path, objpoints, imgpoints_l, imgpoints_r, cou
     output.to_csv(path + '/' + "totalRectify_p_from_img.txt", index=False, header=False)
 
 def save_coordinate_using_rectify_with_distance(path, objpoints, imgpoints_l, imgpoints_r, baseline, focal):
+    """
+    Save the coordinates using rectification with distance calculation.
+
+    Args:
+    - path: The path to save the output files.
+    - objpoints: The 3D object points.
+    - imgpoints_l: The image points from the left camera.
+    - imgpoints_r: The image points from the right camera.
+    - baseline: The baseline distance between the two cameras.
+    - focal: The focal length of the cameras.
+
+    Returns:
+    - None
+    """
     table = []
     refpointx = []
     refpointy = []
@@ -647,6 +718,16 @@ def save_coordinate_using_rectify_with_distance(path, objpoints, imgpoints_l, im
     output.to_csv(path + '/' + "totalDist_p_from_img.txt", index=False, header=False)
 
 def print_current_time(path, name):
+    """
+    Function to print the current time to a log file.
+    
+    Parameters:
+    path (str): the path where the log file is located
+    name (str): the name of the log file
+    
+    Returns:
+    None
+    """
     print(path)
     if(path == None):
         return
@@ -671,6 +752,14 @@ end_header
 '''
 
 def write_ply(fn, verts, colors):
+    """
+    Write the given vertices and colors to a PLY file.
+    
+    Parameters:
+    - fn (str): The file path to write the PLY data to.
+    - verts (ndarray): An array of vertex coordinates.
+    - colors (ndarray): An array of color values corresponding to each vertex.
+    """
     verts = verts.reshape(-1, 3)
     colors = colors.reshape(-1, 3)
     verts = np.hstack([verts, colors])
@@ -679,6 +768,24 @@ def write_ply(fn, verts, colors):
         np.savetxt(f, verts, fmt='%f %f %f %d %d %d ')
 
 def least_squares_stereo_rmse(x, tobj_point, timgpoint_l, timgpoint_r, A1, D1, A2, D2, R, T):
+    """
+    A function to calculate the root mean square error between stereo image points and the corresponding 3D object points using the least squares method. 
+    
+    Parameters:
+    - x: array containing the concatenated rotation vector and translation vector for the left camera
+    - tobj_point: 3D object points
+    - timgpoint_l: image points in the left camera
+    - timgpoint_r: image points in the right camera
+    - A1: camera matrix of the left camera
+    - D1: distortion coefficients of the left camera
+    - A2: camera matrix of the right camera
+    - D2: distortion coefficients of the right camera
+    - R: rotation matrix between the left and right cameras
+    - T: translation vector between the left and right cameras
+    
+    Returns:
+    - temp_mean_error: the root mean square error between the projected image points and the actual image points in both cameras
+    """
     tot_error = 0
     total_points = 0
     # rvec_l = np.zeros(1,3)
@@ -713,6 +820,24 @@ def least_squares_stereo_rmse(x, tobj_point, timgpoint_l, timgpoint_r, A1, D1, A
     return temp_mean_error
 
 def least_squares_stereo_rmse2(x, tobj_point, timgpoint_l, timgpoint_r, A1, D1, A2, D2, R, T):
+    """
+    A function that calculates the Root Mean Square Error (RMSE) for stereo matching using the least squares method.
+
+    Parameters:
+    x (array): Initial guess for the solution.
+    tobj_point (array): 3D object points.
+    timgpoint_l (array): 2D image points in the left image.
+    timgpoint_r (array): 2D image points in the right image.
+    A1 (array): Camera matrix of the left camera.
+    D1 (array): Distortion coefficients of the left camera.
+    A2 (array): Camera matrix of the right camera.
+    D2 (array): Distortion coefficients of the right camera.
+    R (array): Rotation matrix between the left and right camera.
+    T (array): Translation vector between the left and right camera.
+
+    Returns:
+    float: The Root Mean Square Error (RMSE) for the stereo matching process.
+    """
     tot_error = 0
     total_points = 0
 
@@ -759,6 +884,15 @@ def least_squares_stereo_rmse2(x, tobj_point, timgpoint_l, timgpoint_r, A1, D1, 
 
 
 def least_squares_stereo_rmse3(x, R, T):
+    """
+    Generate the function comment for the given function body in a markdown code block with the correct language syntax. There are some rules:
+
+    - Do not include any other part of the function besides the comment.
+    - Do not explain what you did.
+    - It must contain `    ` at the start of each new line in the comment.
+    - The leading spaces and tabs are VERY IMPORTANT.
+    - ONLY RETURN THE FUNCTION COMMENT!
+    """
     tot_error = 0
     total_points = 0
     # rvec_l = np.zeros(1,3)
@@ -785,6 +919,24 @@ def least_squares_stereo_rmse3(x, R, T):
     return residuals
 
 def least_squares_stereo_rmse4(x, tobj_point, timgpoint_l, timgpoint_r, A1, D1, A2, D2, R, T):
+    """
+    Calculate the residuals using the least squares stereo method with given parameters.
+
+    Parameters:
+    x (array): Array containing the rotation and translation vectors.
+    tobj_point (array): 3D object points.
+    timgpoint_l (array): Image points in the left camera.
+    timgpoint_r (array): Image points in the right camera.
+    A1 (array): Camera matrix of the left camera.
+    D1 (array): Distortion coefficients of the left camera.
+    A2 (array): Camera matrix of the right camera.
+    D2 (array): Distortion coefficients of the right camera.
+    R (array): Rotation matrix between the left and right cameras.
+    T (array): Translation vector between the left and right cameras.
+
+    Returns:
+    residuals (array): Residuals of the stereo method.
+    """
     rvec_l = x[0:3]
     tvec_l = x[3:6]
     rp_l, _ = cv2.projectPoints(tobj_point, rvec_l, tvec_l, A1, D1)
@@ -798,6 +950,15 @@ def least_squares_stereo_rmse4(x, tobj_point, timgpoint_l, timgpoint_r, A1, D1, 
 # https://www.learnopencv.com/rotation-matrix-to-euler-angles/
 # Checks if a matrix is a valid rotation matrix.
 def isRotationMatrix(R):
+    """
+    Check if the input matrix is a rotation matrix.
+
+    Parameters:
+    R (numpy array): The input matrix to be checked if it's a rotation matrix.
+
+    Returns:
+    bool: True if the input matrix is a rotation matrix, False otherwise.
+    """
     Rt = np.transpose(R)
     shouldBeIdentity = np.dot(Rt, R)
     I = np.identity(3, dtype=R.dtype)
@@ -809,6 +970,11 @@ def isRotationMatrix(R):
 # The result is the same as MATLAB except the order
 # of the euler angles ( x and z are swapped ).
 def rotationMatrixToEulerAngles(R):
+    """
+    A function to convert a rotation matrix to Euler angles.
+    Takes a rotation matrix R as input.
+    Returns a numpy array of Euler angles [x, y, z] where x is Pitch, y is Yaw, and z is Roll.
+    """
     assert (isRotationMatrix(R))
     # sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
     sy = math.sqrt(R[2, 1] * R[2, 1] + R[2, 2] * R[2, 2])
@@ -828,6 +994,15 @@ def rotationMatrixToEulerAngles(R):
 
 # Calculates Rotation Matrix given euler angles.
 def eulerAnglesToRotationMatrix(theta):
+    """
+    Convert Euler angles to a rotation matrix.
+
+    Parameters:
+    theta (list): List of Euler angles [theta_x, theta_y, theta_z].
+
+    Returns:
+    numpy.array: Rotation matrix resulting from the Euler angles.
+    """
     R_x = np.array([[1, 0, 0],
                     [0, math.cos(theta[0]), -math.sin(theta[0])],
                     [0, math.sin(theta[0]), math.cos(theta[0])]
@@ -1013,6 +1188,13 @@ class StereoCalibration(object):
         return
 
     def loop_moving_of_rot_and_trans(self, cal_path, rot, tran):
+        """
+        A function for loop moving of rotation and translation with specific image processing operations.
+        Parameters:
+        - cal_path: string, the path for calibration images
+        - rot: rotation matrix
+        - tran: translation matrix
+        """
         if(enable_debug_loop_moving_of_rot_and_trans == 0):
             print('skip loop_moving_of_rot_and_trans')
             return
@@ -1130,6 +1312,19 @@ class StereoCalibration(object):
     # input - one & all csv point, output - stereo rms calc
 
     def calc_rms_about_stereo(self, cal_path, cal_loadjson, cal_loadpoint=None, cal_loadimg=None):
+        """
+        A function to calculate the root mean square error about stereo images.
+
+        Args:
+            self: The object instance
+            cal_path: The path for calibration
+            cal_loadjson: The JSON file for calibration
+            cal_loadpoint: The point for calibration
+            cal_loadimg: The image for calibration
+
+        Returns:
+            None
+        """
         print('/////////calc_rms_about_stereo/////////')
         if(cal_loadimg != None):
             cal_path = cal_loadimg
@@ -1346,6 +1541,15 @@ class StereoCalibration(object):
 
     # input - all point, output - json, func- mono and stereo calib
     def read_points_with_mono_stereo(self, cal_path, cal_loadjson=None, cal_loadpoint=None, opt1=None, opt2=None):
+        """
+        A function to read points with mono stereo calibration.
+
+        :param cal_path: The path to the calibration files.
+        :param cal_loadjson: The json file to load calibration values from (optional).
+        :param cal_loadpoint: The point to load calibration from (optional).
+        :param opt1: Additional options for calibration (optional).
+        :param opt2: Additional options for stereo calibration (optional).
+        """
         print_current_time(cal_path, "/log.txt")
 
         if(cal_loadpoint == None):
@@ -1507,6 +1711,13 @@ class StereoCalibration(object):
 
     # input - all point, output - json, func- stereo calib
     def read_points_with_stereo(self, cal_path, cal_loadjson=None, cal_loadpoint=None, opt2=None):
+        """
+        Read stereo points with calibration and process them for stereo camera calibration.
+        :param cal_path: Path to the calibration files
+        :param cal_loadjson: Path to the JSON file with calibration values (optional)
+        :param cal_loadpoint: Path to load calibration points (optional)
+        :param opt2: Additional options for stereo calibration (optional)
+        """
         print_current_time(cal_path, "/log.txt")
 
         if(cal_loadpoint == None):
@@ -2061,6 +2272,10 @@ class StereoCalibration(object):
         pass
 
     def stereo_camera_calibrate(self, dims):
+        """
+        Stereo camera calibration using OpenCV's stereoCalibrate and stereoCalibrateExtended functions.
+        It takes in the dimensions of the calibration pattern and returns camera parameters.
+        """
         # flags = 0
         # #flags |= cv2.CALIB_FIX_INTRINSIC
         # # flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
@@ -2200,6 +2415,19 @@ class StereoCalibration(object):
 
 
     def extract_point_from_chart(self, img_l, img_r):
+        """
+        A function to extract points from a stereo image pair and perform calibration. This function takes in two images, img_l and img_r, checks for validity, finds chessboard corners or circles grid, refines the corners, and saves the coordinates using rectification. 
+
+        Args:
+            img_l: The left image of the stereo pair.
+            img_r: The right image of the stereo pair.
+
+        Returns:
+            count_ok_dual: The count of successfully detected corners/grids in both images.
+            local_objpoints: List of 3D object points in real-world space.
+            local_imgpoints_l: List of 2D points in the left image plane.
+            local_imgpoints_r: List of 2D points in the right image plane.
+        """
         if img_l is False or img_r is False:
             print('NG - please check rectified file.')
             return 0
@@ -2442,6 +2670,9 @@ class StereoCalibration(object):
         return mapL1, mapL2, mapR1, mapR2, RL, PL, RR, PR
 
     def stereo_rectify_with_points(self, img_shape, camera_matrix_l, dist_coeffs_l, camera_matrix_r, dist_coeffs_r, R, T, tobjrefpoint, timgpoints_l,timgpoints_r):
+        """
+        Generate the rectification of images and compute the pixel mappings to the rectified versions of the images. Extract points from a chart, save them, undistort them, and calculate triangulate points. Another method for rectification from point to modified point is also implemented. Calculate the root mean square error for stereo images and return the rectified maps, rectified matrices, and stereo rectification matrices.
+        """
         print("-> process of stereo_rectify_with_points")
 
         # STAGE 4: rectification of images (make scan lines align left <-> right
@@ -2579,6 +2810,17 @@ class StereoCalibration(object):
 
     #calculate distance
     def calc_distance_using_stereo_point(selfs, lpoint, rpoint, PR):
+        """
+        Calculate the distance using stereo vision points.
+
+        Parameters:
+        - lpoint: left point in stereo vision
+        - rpoint: right point in stereo vision
+        - PR: Projection matrix
+
+        Returns:
+        None
+        """
         left_point = np.array(lpoint)
         right_point = np.array(rpoint)
         # print(left_point.shape, right_point.shape)
@@ -2591,6 +2833,16 @@ class StereoCalibration(object):
         pass
 
     def depth_using_stereo_param(self, left, right):
+        """
+        Calculate depth map using stereo parameters.
+
+        Parameters:
+        - left: The left image from the stereo pair
+        - right: The right image from the stereo pair
+
+        Returns:
+        No direct return value. Displays a visualization of the depth map.
+        """
         fx = 1476.77626  # lense focal length
         baseline = -0.0921702  #93.40152  # distance in mm between the two cameras
         disparities = 16  # num of disparities to consider = 16xn
@@ -2618,6 +2870,23 @@ class StereoCalibration(object):
         plt.show()
 
     def depth_using_stereo(self, img_shape, camera_matrix_l, dist_coeffs_l, camera_matrix_r, dist_coeffs_r, R, T, filename_l, filename_r):
+        """
+        A function to calculate stereo depth information using stereo vision and generate a 3D point cloud.
+        
+        Parameters:
+        - img_shape: tuple, shape of the image
+        - camera_matrix_l: numpy array, camera matrix for the left camera
+        - dist_coeffs_l: numpy array, distortion coefficients for the left camera
+        - camera_matrix_r: numpy array, camera matrix for the right camera
+        - dist_coeffs_r: numpy array, distortion coefficients for the right camera
+        - R: numpy array, rotation matrix
+        - T: numpy array, translation vector
+        - filename_l: str, path to the left camera image file
+        - filename_r: str, path to the right camera image file
+        
+        Returns:
+        None
+        """
         # img_l = cv2.imread('./image/LEFT/LEFT13.jpg')
         # img_r = cv2.imread('./image/RIGHT/RIGHT13.jpg')
         # img_l = cv2.imread('./image33/LEFT/LEFT_Step_112.png')
@@ -2744,6 +3013,17 @@ class StereoCalibration(object):
         # cv2.waitKey(0)
 
     def draw_xyz_axis(self, img, corners, imgpts):
+        """
+        Draw XYZ axis on the image.
+
+        Parameters:
+            img: The input image.
+            corners: The corners of the axis.
+            imgpts: The image points.
+
+        Returns:
+            The image with the XYZ axis drawn.
+        """
         corner = tuple(corners[0].ravel())
         img = cv2.line(img, corner, tuple(imgpts[0].ravel()), (255, 0, 0), 5)
         img = cv2.line(img, corner, tuple(imgpts[1].ravel()), (0, 255, 0), 5)
@@ -2751,6 +3031,17 @@ class StereoCalibration(object):
         return img
 
     def pose_estimation(self, cal_path, mtx, dist):
+        """
+        A function that performs pose estimation using images from a specified path.
+
+        Parameters:
+        - cal_path: the path where the calibration images are stored
+        - mtx: camera matrix
+        - dist: distortion coefficients
+
+        Returns:
+        This function does not return anything.
+        """
         if(enable_debug_pose_estimation_display == 0):
             print('skip pose estimation')
             return
@@ -2834,6 +3125,22 @@ class StereoCalibration(object):
                     k = cv2.waitKey(0)
 
     def reprojection_error(self, obj_points, img_points, rvecs, tvecs, camera_matrix, dist_coeffs):
+        """
+        Calculate the reprojection error given object points, image points, rotation vectors, translation vectors, camera matrix, and distortion coefficients.
+
+        Parameters:
+        - obj_points: List of object points in the real world
+        - img_points: List of corresponding image points in the image
+        - rvecs: List of rotation vectors
+        - tvecs: List of translation vectors
+        - camera_matrix: Camera matrix
+        - dist_coeffs: Distortion coefficients
+
+        Returns:
+        - ret_error: Mean reprojection error
+        - tot_error: Total error
+        - total_points: Total number of points
+        """
         min_error = 1
         max_error = 0
 
@@ -2882,6 +3189,20 @@ class StereoCalibration(object):
         return ret_error, tot_error, total_points
 
     def reprojection_error2(self, obj_points, img_points, camera_matrix, dist_coeffs):
+        """
+        Calculate the reprojection error between object points and image points using the solvePnP algorithm.
+
+        Parameters:
+        - obj_points: List of object points in the world coordinate space
+        - img_points: List of corresponding image points in the image coordinate space
+        - camera_matrix: Intrinsic camera matrix
+        - dist_coeffs: Distortion coefficients
+
+        Returns:
+        - ret_error: Mean reprojection error
+        - tot_error: Total reprojection error
+        - total_points: Total number of points used for reprojection
+        """
         min_error = 1
         max_error = 0
 
@@ -2935,6 +3256,21 @@ class StereoCalibration(object):
         pass
 
     def calc_rms_stereo(self, obj_points, imgpoints_l, imgpoints_r, A1, D1, A2, D2, R, T):
+        """
+        A function to calculate the root mean square error in a stereo vision system.
+        Parameters:
+            obj_points: 3D points in the world coordinate system
+            imgpoints_l: 2D points in the left camera image
+            imgpoints_r: 2D points in the right camera image
+            A1: Camera matrix of the left camera
+            D1: Distortion coefficients of the left camera
+            A2: Camera matrix of the right camera
+            D2: Distortion coefficients of the right camera
+            R: Rotation matrix between the left and right cameras
+            T: Translation vector between the left and right cameras
+        Returns:
+            mean_error: The root mean square error calculated from the reprojection errors in the stereo system
+        """
         tot_error = 0
         total_points = 0
 
@@ -2997,6 +3333,9 @@ class StereoCalibration(object):
         return mean_error
 
     def calc_rms_stereo2(self, obj_points, imgpoints_l, imgpoints_r, A1, D1, A2, D2, R, T):
+        """
+        Calculate the root-mean-square error (RMSE) for stereo vision using the given object points and image points for the left and right cameras. Also requires the camera matrices A1 and A2, distortion coefficients D1 and D2, rotation matrix R, and translation vector T. Returns the mean error, reprojected left points, and reprojected right points.
+        """
         tot_error = 0
         total_points = 0
         p_reproj_left = []
@@ -3076,6 +3415,10 @@ class StereoCalibration(object):
         return mean_error, p_reproj_left, p_reproj_right
 
     def calc_rms_stereo3(self, obj_points, imgpoints_l, imgpoints_r, A1, D1, A2, D2, R, T):
+        """
+        Calculates the root mean square error (RMSE) for a stereo calibration using obj_points, imgpoints_l, imgpoints_r, A1, D1, A2, D2, R, and T as input. 
+        Returns the mean error, p_reproj_left, and p_reproj_right.
+        """
         tot_error = 0
         total_points = 0
         p_reproj_left = []
@@ -3573,6 +3916,10 @@ class StereoCalibration(object):
         return mean_error, p_reproj_left, p_reproj_right
 
     def calc_rms_stereo6(self, obj_points, imgpoints_l, imgpoints_r, A1, D1, A2, D2, R, T, tLog=True):
+        """
+        Calculates the root mean square error (RMSE) for stereo images using the given object points and left and right image points. It also takes the intrinsic and distortion parameters for the left and right cameras (A1, D1, A2, D2), rotation matrix (R), translation vector (T), and a boolean flag tLog. 
+        Returns the mean error, and the reprojected image points for the left and right cameras.
+        """
         tot_error = 0
         total_points = 0
         p_reproj_left = []
@@ -3819,6 +4166,23 @@ class StereoCalibration(object):
         return mean_error, p_reproj_left, p_reproj_right
 
     def check_boundary_until_rp(self, obj_points, imgpoints_l, imgpoints_r, A1, D1, A2, D2, R, T):
+        """
+        A function that checks the boundary until reaching a certain point, modifying the input values by small increments and calculating the RMS stereo value at each step.
+
+        Parameters:
+        - obj_points: List of object points
+        - imgpoints_l: Image points for the left camera
+        - imgpoints_r: Image points for the right camera
+        - A1: Camera matrix for the left camera
+        - D1: Distortion coefficients for the left camera
+        - A2: Camera matrix for the right camera
+        - D2: Distortion coefficients for the right camera
+        - R: Rotation matrix
+        - T: Translation vector
+
+        Returns:
+        - None
+        """
         print("=====check_boundary_until_rp=====")
 
         offset_r = 0.2
@@ -3892,6 +4256,22 @@ class StereoCalibration(object):
         pass
 
     def draw_arrow(self, img, start_x, start_y, end_x, end_y, color, thinkness, scale=100):
+        """
+        A function to draw an arrow on an image from a starting point to an ending point with a specified color and thickness.
+
+        Parameters:
+            img: The image on which the arrow will be drawn.
+            start_x: The x-coordinate of the starting point of the arrow.
+            start_y: The y-coordinate of the starting point of the arrow.
+            end_x: The x-coordinate of the ending point of the arrow.
+            end_y: The y-coordinate of the ending point of the arrow.
+            color: The color of the arrow.
+            thinkness: The thickness of the arrow.
+            scale: The scale factor to adjust the arrow length (default is 100).
+
+        Returns:
+            None
+        """
         width = 3
         #apply scale
         gap_x = int((end_x - start_x) * scale + start_x)
@@ -3926,6 +4306,19 @@ class StereoCalibration(object):
         return img1, img2
 
     def display_reprojection_point_and_image_point(self, cal_path, imgpoint_left, imgpoint_right, reproject_left, reproject_right):
+        """
+        A function to display reprojected points and image points.
+        
+        Parameters:
+        cal_path (str): The path to the calibration images.
+        imgpoint_left (list): List of image points on the left side.
+        imgpoint_right (list): List of image points on the right side.
+        reproject_left (list): List of reprojected points on the left side.
+        reproject_right (list): List of reprojected points on the right side.
+        
+        Returns:
+        None
+        """
         if (enable_debug_display_image_point_and_reproject_point == 0):
             print("skip display_reprojection_point_and_image_point")
             return
@@ -4010,6 +4403,11 @@ class StereoCalibration(object):
         pass
 
 def display_guide():
+    """
+    A function to display a guide for using the tool. 
+    It provides instructions for stereo calibration using images or camera data.
+    The function includes steps to follow for both methods and examples of command usage.
+    """
     print("="*80)
     print("Please follow below - made by yeolip.yoon (magicst3@gmail.com)")
     print("this tool is support stereo calibration using both image or camera param.")
